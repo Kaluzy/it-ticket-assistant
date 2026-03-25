@@ -425,13 +425,39 @@ textarea.inp{resize:vertical;min-height:88px;line-height:1.6}
 // ══════════════════════════════════════════
 //  DATA & STATE
 // ══════════════════════════════════════════
-const MODELS=[
-  {v:'google/gemini-2.0-flash-exp:free',l:'Gemini 2.0 Flash (Free)'},
-  {v:'google/gemini-2.5-pro-exp-03-25:free',l:'Gemini 2.5 Pro (Free)'},
+const MODELS_FALLBACK=[
   {v:'meta-llama/llama-4-maverick:free',l:'Llama 4 Maverick (Free)'},
   {v:'deepseek/deepseek-chat-v3-0324:free',l:'DeepSeek V3 (Free)'},
   {v:'mistralai/mistral-small-3.1-24b-instruct:free',l:'Mistral Small 3.1 (Free)'}
 ];
+let MODELS=MODELS_FALLBACK;
+
+async function fetchFreeModels(){
+  const ms=document.getElementById('tModel');
+  try{
+    const res=await fetch('https://openrouter.ai/api/v1/models',{headers:{'Authorization':`Bearer ${getKey()}`}});
+    if(!res.ok)throw new Error();
+    const data=await res.json();
+    const free=data.data
+      .filter(m=>m.id.endsWith(':free')&&m.name)
+      .sort((a,b)=>a.name.localeCompare(b.name));
+    if(!free.length)throw new Error();
+    MODELS=free.map(m=>({v:m.id,l:m.name}));
+  }catch{
+    MODELS=MODELS_FALLBACK;
+  }
+  const saved=getModel();
+  ms.innerHTML='';
+  MODELS.forEach(m=>{
+    const o=document.createElement('option');
+    o.value=m.v;o.textContent=m.l;
+    if(m.v===saved)o.selected=true;
+    ms.appendChild(o);
+  });
+  // Also update settings modal if open
+  const sm=document.getElementById('settingsModel');
+  if(sm){sm.innerHTML='';MODELS.forEach(m=>{const o=document.createElement('option');o.value=m.v;o.textContent=m.l;if(m.v===saved)o.selected=true;sm.appendChild(o);});}
+}
 const ISSUES=[
   {l:'Docking Station',v:'ThinkPad docking station not charging or not passing power to laptop'},
   {l:'Wi-Fi Drops',v:'Wi-Fi keeps disconnecting intermittently'},
@@ -498,10 +524,10 @@ function setupSave(){
 
 function boot(){
   document.getElementById('mainApp').style.display='flex';
-  // Build model selects
+  // Build model selects with live fetch
   const ms=document.getElementById('tModel');
-  ms.innerHTML='';
-  MODELS.forEach(m=>{const o=document.createElement('option');o.value=m.v;o.textContent=m.l;if(m.v===getModel())o.selected=true;ms.appendChild(o);});
+  ms.innerHTML='<option disabled>Loading models…</option>';
+  fetchFreeModels();
   // Build chips
   const cc=document.getElementById('chips');
   cc.innerHTML='';
