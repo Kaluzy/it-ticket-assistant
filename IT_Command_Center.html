@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>IT Command Center · Maxim Healthcare</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:'Inter',sans-serif;background:#070d1a;color:#e2e8f0;overflow:hidden;-webkit-font-smoothing:antialiased}
+.bg-grid{position:fixed;inset:0;background-image:linear-gradient(rgba(59,130,246,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(59,130,246,.03) 1px,transparent 1px);background-size:44px 44px;pointer-events:none;z-index:0}
+.bg-orb1{position:fixed;top:-180px;left:-180px;width:560px;height:560px;background:radial-gradient(circle,rgba(59,130,246,.09) 0%,transparent 70%);pointer-events:none;z-index:0}
+.bg-orb2{position:fixed;bottom:-150px;right:-150px;width:480px;height:480px;background:radial-gradient(circle,rgba(6,182,212,.07) 0%,transparent 70%);pointer-events:none;z-index:0}
+.glass{background:rgba(255,255,255,.04);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.07)}
+.glass-dark{background:rgba(7,13,26,.85);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,.06)}
+::-webkit-scrollbar{width:3px;height:3px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:2px}
+.grad-text{background:linear-gradient(135deg,#60a5fa,#34d399);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.btn-glow{background:linear-gradient(135deg,#2563eb,#0891b2);box-shadow:0 0 24px rgba(37,99,235,.4),0 4px 15px rgba(0,0,0,.3);transition:all .2s;border:none;cursor:pointer}
+.btn-glow:hover{box-shadow:0 0 36px rgba(37,99,235,.6),0 6px 20px rgba(0,0,0,.4);transform:translateY(-1px)}
+.btn-glow:active{transform:translateY(0)}
+.btn-glow:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none}
+.btn-sm{padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);color:rgba(255,255,255,.6)}
+.btn-sm:hover{background:rgba(255,255,255,.1);color:#fff;border-color:rgba(255,255,255,.2)}
+.inp{width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:9px 13px;font-size:13px;color:#e2e8f0;font-family:inherit;transition:border .15s,box-shadow .15s}
+.inp::placeholder{color:rgba(255,255,255,.22)}
+.inp:focus{outline:none;border-color:rgba(59,130,246,.5);box-shadow:0 0 0 3px rgba(59,130,246,.1)}
+.inp option{background:#0f1b2e}
+.chip{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:100px;font-size:11px;font-weight:600;cursor:pointer;background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.08);color:rgba(255,255,255,.45);transition:all .15s;white-space:nowrap;user-select:none}
+.chip:hover{background:rgba(59,130,246,.12);border-color:rgba(59,130,246,.35);color:#93c5fd}
+.chip.on{background:rgba(59,130,246,.18);border-color:rgba(59,130,246,.45);color:#93c5fd}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 11px;border-radius:10px;cursor:pointer;transition:all .15s;color:rgba(255,255,255,.38);font-size:12.5px;font-weight:500;white-space:nowrap;overflow:hidden;user-select:none}
+.nav-item:hover{background:rgba(255,255,255,.06);color:rgba(255,255,255,.75)}
+.nav-item.on{background:rgba(59,130,246,.14);color:#93c5fd;border:1px solid rgba(59,130,246,.22)}
+.nav-item svg{width:17px;height:17px;flex-shrink:0}
+.sb{width:216px;transition:width .22s cubic-bezier(.4,0,.2,1);flex-shrink:0}
+.sb.col{width:56px}
+.sb.col .nl{opacity:0;max-width:0;pointer-events:none}
+.sb.col .sb-logo-text{opacity:0;max-width:0}
+.nl{transition:opacity .2s,max-width .2s;max-width:200px;overflow:hidden}
+.tab-btn{padding:6px 13px;border-radius:8px;font-size:11.5px;font-weight:600;cursor:pointer;color:rgba(255,255,255,.35);transition:all .15s;white-space:nowrap;border:1px solid transparent}
+.tab-btn:hover{color:rgba(255,255,255,.65);background:rgba(255,255,255,.05)}
+.tab-btn.on{background:rgba(59,130,246,.18);color:#93c5fd;border-color:rgba(59,130,246,.3)}
+.bdg{padding:2px 8px;border-radius:100px;font-size:9.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase}
+.bdg-blue{background:rgba(59,130,246,.18);color:#93c5fd;border:1px solid rgba(59,130,246,.28)}
+.bdg-teal{background:rgba(20,184,166,.18);color:#5eead4;border:1px solid rgba(20,184,166,.28)}
+.bdg-green{background:rgba(34,197,94,.14);color:#86efac;border:1px solid rgba(34,197,94,.24)}
+.bdg-amber{background:rgba(245,158,11,.14);color:#fcd34d;border:1px solid rgba(245,158,11,.24)}
+.bdg-red{background:rgba(239,68,68,.14);color:#fca5a5;border:1px solid rgba(239,68,68,.24)}
+.bdg-purple{background:rgba(139,92,246,.14);color:#c4b5fd;border:1px solid rgba(139,92,246,.24)}
+.bdg-gray{background:rgba(255,255,255,.07);color:rgba(255,255,255,.45);border:1px solid rgba(255,255,255,.12)}
+.qcard{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:11px;transition:all .15s;cursor:default}
+.qcard:hover{background:rgba(255,255,255,.07);border-color:rgba(59,130,246,.25);transform:translateY(-1px)}
+.pulsed{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.pulsed.green{background:#22c55e;box-shadow:0 0 0 0 rgba(34,197,94,.4);animation:pr 2s ease-out infinite}
+.pulsed.amber{background:#f59e0b;box-shadow:0 0 0 0 rgba(245,158,11,.4);animation:pa 2s ease-out infinite}
+.pulsed.blue{background:#3b82f6;box-shadow:0 0 0 0 rgba(59,130,246,.4);animation:pb 2s ease-out infinite}
+.pulsed.red{background:#ef4444;box-shadow:0 0 0 0 rgba(239,68,68,.4);animation:prd 2s ease-out infinite}
+@keyframes pr{0%{box-shadow:0 0 0 0 rgba(34,197,94,.4)}70%{box-shadow:0 0 0 7px rgba(34,197,94,0)}100%{box-shadow:0 0 0 0 rgba(34,197,94,0)}}
+@keyframes pa{0%{box-shadow:0 0 0 0 rgba(245,158,11,.4)}70%{box-shadow:0 0 0 7px rgba(245,158,11,0)}100%{box-shadow:0 0 0 0 rgba(245,158,11,0)}}
+@keyframes pb{0%{box-shadow:0 0 0 0 rgba(59,130,246,.4)}70%{box-shadow:0 0 0 7px rgba(59,130,246,0)}100%{box-shadow:0 0 0 0 rgba(59,130,246,0)}}
+@keyframes prd{0%{box-shadow:0 0 0 0 rgba(239,68,68,.4)}70%{box-shadow:0 0 0 7px rgba(239,68,68,0)}100%{box-shadow:0 0 0 0 rgba(239,68,68,0)}}
+.spinner{width:15px;height:15px;border:2px solid rgba(255,255,255,.18);border-top-color:#fff;border-radius:50%;animation:spin .65s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.skeleton{background:linear-gradient(90deg,rgba(255,255,255,.05) 25%,rgba(255,255,255,.09) 50%,rgba(255,255,255,.05) 75%);background-size:200% 100%;animation:shimmer 1.4s infinite;border-radius:6px}
+@keyframes shimmer{from{background-position:200% 0}to{background-position:-200% 0}}
+.view-enter{animation:vslide .3s cubic-bezier(.16,1,.3,1)}
+@keyframes vslide{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.copy-btn{display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:6px;font-size:11px;font-weight:600;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.09);color:rgba(255,255,255,.4);cursor:pointer;transition:all .15s}
+.copy-btn:hover{background:rgba(34,197,94,.1);border-color:rgba(34,197,94,.3);color:#86efac}
+.copy-btn.done{background:rgba(34,197,94,.1);border-color:rgba(34,197,94,.3);color:#86efac}
+.copy-btn svg{width:11px;height:11px}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(8px);z-index:100;display:flex;align-items:center;justify-content:center;padding:20px}
+.modal-box{background:#0d1829;border:1px solid rgba(255,255,255,.1);border-radius:18px;padding:32px;max-width:460px;width:100%;box-shadow:0 24px 80px rgba(0,0,0,.6);animation:vslide .35s cubic-bezier(.16,1,.3,1)}
+.stat-card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:18px;transition:all .2s}
+.stat-card:hover{background:rgba(255,255,255,.07);border-color:rgba(59,130,246,.2)}
+.hcard{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:12px;transition:all .15s;cursor:pointer}
+.hcard:hover{background:rgba(255,255,255,.06);border-color:rgba(59,130,246,.2)}
+textarea.inp{resize:vertical;min-height:88px;line-height:1.6}
+.out-body{font-size:12.5px;line-height:1.75;color:rgba(255,255,255,.65);white-space:pre-wrap;word-break:break-word;min-height:60px}
+</style>
+</head>
+<body>
+
+<div class="bg-grid"></div>
+<div class="bg-orb1"></div>
+<div class="bg-orb2"></div>
+
+<!-- ═══ SETUP MODAL ═══ -->
+<div id="setupModal" class="modal-overlay">
+  <div class="modal-box" style="max-width:500px">
+    <div style="text-align:center;margin-bottom:28px">
+      <div style="width:56px;height:56px;background:linear-gradient(135deg,#2563eb,#0891b2);border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:22px;font-weight:900;color:#fff;box-shadow:0 0 30px rgba(37,99,235,.5)">IT</div>
+      <h1 style="font-size:22px;font-weight:800;margin-bottom:6px" class="grad-text">IT Command Center</h1>
+      <p style="font-size:13px;color:rgba(255,255,255,.45);line-height:1.6">Maxim Healthcare Services · Powered by AI<br/>Enter your OpenRouter API key to get started.</p>
+    </div>
+    <div style="margin-bottom:12px">
+      <label style="font-size:11px;font-weight:700;color:rgba(255,255,255,.4);letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:7px">OpenRouter API Key</label>
+      <input class="inp" type="password" id="setupKey" placeholder="sk-or-v1-..." style="font-family:monospace"/>
+    </div>
+    <p style="font-size:11px;color:rgba(255,255,255,.28);margin-bottom:20px;line-height:1.6">Your key is stored locally on this device only — never transmitted to any server except OpenRouter.<br/><span style="color:rgba(59,130,246,.7)">Get a free key at openrouter.ai</span></p>
+    <button class="btn-glow" style="width:100%;padding:12px;border-radius:10px;font-size:14px;font-weight:700;color:#fff" onclick="setupSave()">
+      Connect &amp; Launch →
+    </button>
+    <p style="text-align:center;margin-top:12px;font-size:11px;color:rgba(255,255,255,.2)">You can update this anytime in Settings</p>
+  </div>
+</div>
+
+<!-- ═══ SETTINGS MODAL ═══ -->
+<div id="settingsModal" class="modal-overlay" style="display:none">
+  <div class="modal-box">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px">
+      <h2 style="font-size:16px;font-weight:800">Settings</h2>
+      <button onclick="closeSettings()" style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:5px 10px;color:rgba(255,255,255,.5);cursor:pointer;font-size:12px">✕ Close</button>
+    </div>
+    <label style="font-size:11px;font-weight:700;color:rgba(255,255,255,.4);letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:7px">API Key</label>
+    <input class="inp" type="password" id="settingsKey" placeholder="sk-or-v1-..." style="font-family:monospace;margin-bottom:8px"/>
+    <p id="keyStatus" style="font-size:11px;color:rgba(34,197,94,.7);margin-bottom:18px"></p>
+    <label style="font-size:11px;font-weight:700;color:rgba(255,255,255,.4);letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:7px">Default AI Model</label>
+    <select class="inp" id="settingsModel" style="margin-bottom:20px">
+      <option value="google/gemini-2.0-flash-exp:free">Gemini 2.0 Flash (Free)</option>
+      <option value="google/gemini-2.5-pro-exp-03-25:free">Gemini 2.5 Pro (Free)</option>
+      <option value="meta-llama/llama-4-maverick:free">Llama 4 Maverick (Free)</option>
+      <option value="deepseek/deepseek-chat-v3-0324:free">DeepSeek V3 (Free)</option>
+      <option value="mistralai/mistral-small-3.1-24b-instruct:free">Mistral Small 3.1 (Free)</option>
+    </select>
+    <div style="display:flex;gap:10px">
+      <button class="btn-glow" style="flex:1;padding:10px;border-radius:9px;font-size:13px;font-weight:700;color:#fff" onclick="saveSettings()">Save Changes</button>
+      <button onclick="clearAll()" style="padding:10px 16px;border-radius:9px;font-size:12px;font-weight:600;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);color:#fca5a5;cursor:pointer">Clear All Data</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MAIN APP ═══ -->
+<div id="mainApp" style="display:none;position:relative;z-index:1;height:100dvh;display:none;flex-direction:column">
+
+  <!-- TOP BAR -->
+  <header class="glass-dark" style="height:52px;display:flex;align-items:center;padding:0 16px;gap:14px;flex-shrink:0;z-index:10">
+    <button onclick="toggleSb()" style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:5px;cursor:pointer;color:rgba(255,255,255,.5);display:flex;align-items:center">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+    <div style="display:flex;align-items:center;gap:8px">
+      <div style="width:28px;height:28px;background:linear-gradient(135deg,#2563eb,#0891b2);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;color:#fff">IT</div>
+      <span style="font-size:13px;font-weight:700;color:rgba(255,255,255,.9)">Command Center</span>
+      <span style="font-size:10px;color:rgba(255,255,255,.25);font-weight:500">Maxim Healthcare</span>
+    </div>
+    <div style="flex:1"></div>
+    <div id="apiIndicator" style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600">
+      <div class="pulsed green"></div>
+      <span style="color:rgba(255,255,255,.4)">API Connected</span>
+    </div>
+    <button onclick="openSettings()" class="btn-sm" style="display:flex;align-items:center;gap:5px">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+      Settings
+    </button>
+  </header>
+
+  <!-- BODY -->
+  <div style="display:flex;flex:1;overflow:hidden">
+
+    <!-- SIDEBAR -->
+    <aside id="sidebar" class="sb glass-dark" style="display:flex;flex-direction:column;padding:10px;gap:4px;overflow:hidden;flex-shrink:0;height:100%;border-right:1px solid rgba(255,255,255,.06)">
+      <div style="margin-bottom:8px;padding:4px 6px">
+        <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,.2);letter-spacing:.1em;text-transform:uppercase" class="nl">Navigation</div>
+      </div>
+      <div class="nav-item on" id="nav-dashboard" onclick="setView('dashboard')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        <span class="nl">Dashboard</span>
+      </div>
+      <div class="nav-item" id="nav-ticket" onclick="setView('ticket')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg>
+        <span class="nl">New Ticket</span>
+      </div>
+      <div class="nav-item" id="nav-queue" onclick="setView('queue')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="5" height="18"/><rect x="10" y="3" width="5" height="18"/><rect x="17" y="3" width="5" height="18"/></svg>
+        <span class="nl">Queue Board <span id="navQueueCount" style="font-size:10px;background:rgba(59,130,246,.3);padding:1px 5px;border-radius:100px;margin-left:4px"></span></span>
+      </div>
+      <div class="nav-item" id="nav-history" onclick="setView('history')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        <span class="nl">History</span>
+      </div>
+      <div style="flex:1"></div>
+      <div style="padding:8px 6px;border-top:1px solid rgba(255,255,255,.05);margin-top:6px">
+        <div style="font-size:10px;color:rgba(255,255,255,.2);font-weight:500" class="nl">Ctrl+Enter to Generate</div>
+      </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main style="flex:1;overflow:hidden;display:flex;flex-direction:column">
+
+      <!-- DASHBOARD VIEW -->
+      <div id="view-dashboard" class="view-enter" style="flex:1;overflow-y:auto;padding:24px;display:flex;flex-direction:column;gap:20px">
+        <div>
+          <h1 style="font-size:22px;font-weight:800;margin-bottom:4px">Good day 👋</h1>
+          <p style="font-size:13px;color:rgba(255,255,255,.4)" id="dashDate"></p>
+        </div>
+        <!-- Stats row -->
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px" id="statsRow">
+          <div class="stat-card">
+            <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.35);letter-spacing:.07em;text-transform:uppercase;margin-bottom:10px">Today's Tickets</div>
+            <div style="font-size:32px;font-weight:900" class="grad-text" id="statToday">0</div>
+            <div style="font-size:11px;color:rgba(255,255,255,.3);margin-top:4px">Generated</div>
+          </div>
+          <div class="stat-card">
+            <div style="font-size:10px;font-weight:700;color:rgba(59,130,246,.6);letter-spacing:.07em;text-transform:uppercase;margin-bottom:10px">Active</div>
+            <div style="font-size:32px;font-weight:900;color:#60a5fa" id="statActive">0</div>
+            <div style="font-size:11px;color:rgba(255,255,255,.3);margin-top:4px">In Queue</div>
+          </div>
+          <div class="stat-card">
+            <div style="font-size:10px;font-weight:700;color:rgba(245,158,11,.6);letter-spacing:.07em;text-transform:uppercase;margin-bottom:10px">On Hold</div>
+            <div style="font-size:32px;font-weight:900;color:#fcd34d" id="statHold">0</div>
+            <div style="font-size:11px;color:rgba(255,255,255,.3);margin-top:4px">Awaiting User</div>
+          </div>
+          <div class="stat-card">
+            <div style="font-size:10px;font-weight:700;color:rgba(239,68,68,.6);letter-spacing:.07em;text-transform:uppercase;margin-bottom:10px">To Be Closed</div>
+            <div style="font-size:32px;font-weight:900;color:#fca5a5" id="statTbx">0</div>
+            <div style="font-size:11px;color:rgba(255,255,255,.3);margin-top:4px">TBX</div>
+          </div>
+        </div>
+        <!-- Quick actions -->
+        <div style="display:flex;gap:12px">
+          <button class="btn-glow" style="padding:11px 22px;border-radius:10px;font-size:13px;font-weight:700;color:#fff;display:flex;align-items:center;gap:7px" onclick="setView('ticket')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+            New Ticket
+          </button>
+          <button class="btn-sm" onclick="setView('queue')" style="display:flex;align-items:center;gap:7px">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="5" height="18"/><rect x="10" y="3" width="5" height="18"/><rect x="17" y="3" width="5" height="18"/></svg>
+            View Queue
+          </button>
+        </div>
+        <!-- Recent tickets -->
+        <div>
+          <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,.3);letter-spacing:.07em;text-transform:uppercase;margin-bottom:12px">Recent Tickets</div>
+          <div id="recentList" style="display:flex;flex-direction:column;gap:8px">
+            <div style="font-size:13px;color:rgba(255,255,255,.25);padding:20px 0;text-align:center">No tickets yet — generate your first one</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TICKET VIEW -->
+      <div id="view-ticket" style="display:none;flex:1;overflow:hidden">
+        <div style="display:grid;grid-template-columns:360px 1fr;height:100%;overflow:hidden">
+
+          <!-- LEFT: Form -->
+          <div style="border-right:1px solid rgba(255,255,255,.06);overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:14px">
+            <div>
+              <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px">New Ticket</div>
+              <h2 style="font-size:17px;font-weight:800">Ticket Intelligence</h2>
+            </div>
+            <div>
+              <label style="font-size:11px;font-weight:600;color:rgba(255,255,255,.4);display:block;margin-bottom:5px">User's Name</label>
+              <input class="inp" type="text" id="tUser" placeholder="e.g. John Smith"/>
+            </div>
+            <div>
+              <label style="font-size:11px;font-weight:600;color:rgba(255,255,255,.4);display:block;margin-bottom:5px">Issue Description</label>
+              <textarea class="inp" id="tIssue" placeholder="Describe the reported issue…"></textarea>
+            </div>
+            <div>
+              <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.3);letter-spacing:.07em;text-transform:uppercase;margin-bottom:8px">Quick Issues</div>
+              <div style="display:flex;flex-wrap:wrap;gap:6px" id="chips"></div>
+            </div>
+            <div>
+              <label style="font-size:11px;font-weight:600;color:rgba(255,255,255,.4);display:block;margin-bottom:5px">AI Model</label>
+              <select class="inp" id="tModel"></select>
+            </div>
+            <button class="btn-glow" id="genBtn" onclick="generate()" style="width:100%;padding:12px;border-radius:10px;font-size:14px;font-weight:700;color:#fff;display:flex;align-items:center;justify-content:center;gap:8px">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+              Generate Intelligence
+            </button>
+            <!-- Add to queue (shows after generation) -->
+            <div id="addQueueWrap" style="display:none;gap:8px;flex-direction:column">
+              <div style="height:1px;background:rgba(255,255,255,.07)"></div>
+              <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.3);letter-spacing:.07em;text-transform:uppercase">Add to Queue</div>
+              <div style="display:flex;gap:8px">
+                <select class="inp" id="queueStatus" style="flex:1">
+                  <option value="new">New</option>
+                  <option value="active" selected>Active</option>
+                  <option value="hold">On Hold</option>
+                </select>
+                <button onclick="addToQueue()" style="padding:9px 14px;border-radius:9px;font-size:12px;font-weight:700;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.28);color:#86efac;cursor:pointer;white-space:nowrap">+ Add</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- RIGHT: Output -->
+          <div style="overflow-y:auto;display:flex;flex-direction:column">
+            <!-- Empty state -->
+            <div id="outEmpty" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:rgba(255,255,255,.25);text-align:center;padding:40px">
+              <div style="width:64px;height:64px;border-radius:50%;background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.15);display:flex;align-items:center;justify-content:center">
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="1.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+              </div>
+              <div>
+                <div style="font-size:15px;font-weight:700;color:rgba(255,255,255,.4);margin-bottom:6px">Ready to Analyze</div>
+                <div style="font-size:12px;line-height:1.6">Fill in the user and issue, then hit<br/><strong style="color:rgba(59,130,246,.8)">Generate Intelligence</strong></div>
+              </div>
+            </div>
+            <!-- Loading skeleton -->
+            <div id="outLoading" style="display:none;padding:24px;display:none;flex-direction:column;gap:14px">
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+                <div class="spinner" style="border-top-color:#3b82f6;border-color:rgba(59,130,246,.2)"></div>
+                <span style="font-size:13px;color:rgba(255,255,255,.4)">AI is analyzing the ticket…</span>
+              </div>
+              <div class="skeleton" style="height:14px;width:40%"></div>
+              <div class="skeleton" style="height:80px"></div>
+              <div class="skeleton" style="height:14px;width:35%"></div>
+              <div class="skeleton" style="height:100px"></div>
+              <div class="skeleton" style="height:14px;width:45%"></div>
+              <div class="skeleton" style="height:80px"></div>
+            </div>
+            <!-- Output panel -->
+            <div id="outPanel" style="display:none;flex-direction:column;height:100%">
+              <!-- Ticket bar -->
+              <div style="padding:14px 20px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:center;gap:14px;flex-shrink:0;background:rgba(7,13,26,.6)">
+                <div>
+                  <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,.3);letter-spacing:.07em;text-transform:uppercase">User</div>
+                  <div style="font-size:13px;font-weight:700;color:#e2e8f0;margin-top:2px" id="outUser"></div>
+                </div>
+                <div style="width:1px;height:28px;background:rgba(255,255,255,.08)"></div>
+                <div style="flex:1">
+                  <div style="font-size:9px;font-weight:700;color:rgba(255,255,255,.3);letter-spacing:.07em;text-transform:uppercase">Issue</div>
+                  <div style="font-size:12px;color:rgba(255,255,255,.6);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" id="outIssue"></div>
+                </div>
+                <div id="outPriority"></div>
+                <button onclick="copyAll()" class="btn-sm" style="display:flex;align-items:center;gap:5px;flex-shrink:0">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                  Copy All
+                </button>
+              </div>
+              <!-- Tabs -->
+              <div style="padding:10px 16px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;gap:4px;flex-wrap:wrap;flex-shrink:0;background:rgba(7,13,26,.4)">
+                <button class="tab-btn on" id="tab-teams" onclick="setTab('teams')">Teams Msg</button>
+                <button class="tab-btn" id="tab-root" onclick="setTab('root')">Root Cause</button>
+                <button class="tab-btn" id="tab-user" onclick="setTab('user')">User Steps</button>
+                <button class="tab-btn" id="tab-tech" onclick="setTab('tech')">Tech Steps</button>
+                <button class="tab-btn" id="tab-work" onclick="setTab('work')">Work Note</button>
+                <button class="tab-btn" id="tab-close" onclick="setTab('close')">Closing Note</button>
+              </div>
+              <!-- Tab content -->
+              <div style="flex:1;overflow-y:auto;padding:20px">
+                <div id="tabContent" style="display:flex;flex-direction:column;gap:10px">
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+                    <span id="tabLabel" class="bdg bdg-blue">Teams Message</span>
+                    <button class="copy-btn" id="tabCopyBtn" onclick="copyTab()">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                      Copy
+                    </button>
+                  </div>
+                  <div class="out-body glass" style="padding:16px;border-radius:10px" id="tabBody"></div>
+                </div>
+              </div>
+            </div>
+            <!-- Error -->
+            <div id="outError" style="display:none;padding:20px">
+              <div style="padding:14px 16px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);border-radius:10px;color:#fca5a5;font-size:13px;display:flex;align-items:flex-start;gap:10px">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;margin-top:1px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                <span id="errMsg"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- QUEUE VIEW -->
+      <div id="view-queue" style="display:none;flex:1;overflow:hidden;padding:20px">
+        <div style="margin-bottom:16px;display:flex;align-items:center;justify-content:space-between">
+          <div>
+            <h2 style="font-size:17px;font-weight:800">Queue Board</h2>
+            <p style="font-size:12px;color:rgba(255,255,255,.35);margin-top:2px">Mirrors your Chrome tab groups — New · Active · On Hold · TBX</p>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;height:calc(100% - 64px)">
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:9px;background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.2)">
+              <div class="pulsed blue"></div>
+              <span style="font-size:11px;font-weight:700;color:#93c5fd;letter-spacing:.05em;text-transform:uppercase">New</span>
+              <span id="cnt-new" style="margin-left:auto;font-size:10px;font-weight:700;background:rgba(59,130,246,.3);padding:1px 7px;border-radius:100px;color:#93c5fd">0</span>
+            </div>
+            <div id="col-new" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:7px"></div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:9px;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.2)">
+              <div class="pulsed green"></div>
+              <span style="font-size:11px;font-weight:700;color:#86efac;letter-spacing:.05em;text-transform:uppercase">Active</span>
+              <span id="cnt-active" style="margin-left:auto;font-size:10px;font-weight:700;background:rgba(34,197,94,.3);padding:1px 7px;border-radius:100px;color:#86efac">0</span>
+            </div>
+            <div id="col-active" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:7px"></div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:9px;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.2)">
+              <div class="pulsed amber"></div>
+              <span style="font-size:11px;font-weight:700;color:#fcd34d;letter-spacing:.05em;text-transform:uppercase">On Hold</span>
+              <span id="cnt-hold" style="margin-left:auto;font-size:10px;font-weight:700;background:rgba(245,158,11,.3);padding:1px 7px;border-radius:100px;color:#fcd34d">0</span>
+            </div>
+            <div id="col-hold" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:7px"></div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:9px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2)">
+              <div class="pulsed red"></div>
+              <span style="font-size:11px;font-weight:700;color:#fca5a5;letter-spacing:.05em;text-transform:uppercase">TBX</span>
+              <span id="cnt-tbx" style="margin-left:auto;font-size:10px;font-weight:700;background:rgba(239,68,68,.3);padding:1px 7px;border-radius:100px;color:#fca5a5">0</span>
+            </div>
+            <div id="col-tbx" style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:7px"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- HISTORY VIEW -->
+      <div id="view-history" style="display:none;flex:1;overflow-y:auto;padding:20px">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+          <h2 style="font-size:17px;font-weight:800;flex:1">Ticket History</h2>
+          <input class="inp" style="max-width:260px" type="text" id="histSearch" placeholder="Search user or issue…" oninput="renderHistory()"/>
+          <button onclick="clearHistory()" class="btn-sm" style="color:rgba(239,68,68,.7);border-color:rgba(239,68,68,.2);white-space:nowrap">Clear All</button>
+        </div>
+        <div id="histList" style="display:flex;flex-direction:column;gap:8px"></div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast" style="position:fixed;bottom:22px;right:22px;z-index:200;display:flex;flex-direction:column;gap:8px;pointer-events:none"></div>
+
+<script>
+// ══════════════════════════════════════════
+//  DATA & STATE
+// ══════════════════════════════════════════
+const MODELS=[
+  {v:'google/gemini-2.0-flash-exp:free',l:'Gemini 2.0 Flash (Free)'},
+  {v:'google/gemini-2.5-pro-exp-03-25:free',l:'Gemini 2.5 Pro (Free)'},
+  {v:'meta-llama/llama-4-maverick:free',l:'Llama 4 Maverick (Free)'},
+  {v:'deepseek/deepseek-chat-v3-0324:free',l:'DeepSeek V3 (Free)'},
+  {v:'mistralai/mistral-small-3.1-24b-instruct:free',l:'Mistral Small 3.1 (Free)'}
+];
+const ISSUES=[
+  {l:'Docking Station',v:'ThinkPad docking station not charging or not passing power to laptop'},
+  {l:'Wi-Fi Drops',v:'Wi-Fi keeps disconnecting intermittently'},
+  {l:'Monitor Issue',v:'External monitor not displaying or not recognized by laptop'},
+  {l:'25H2 Upgrade',v:'Windows 25H2 feature update failed via software distribution'},
+  {l:'Software Dist.',v:'SCCM / software distribution app not installing or failing'},
+  {l:'Storage Full',v:'Duplication folder or local storage running out of space'},
+  {l:'Teams Drops',v:'Microsoft Teams drops calls or disconnects during meetings'},
+  {l:'Chromebook Charge',v:'Chromebook not charging or battery not recognized'},
+  {l:'Chromebook Verizon',v:'Chromebook cannot connect to Verizon mobile network'},
+  {l:'Cracked Screen',v:'Device screen cracked or touch not responding'},
+  {l:'Liquid Damage',v:'Liquid spilled on device'},
+  {l:'Lenovo Update',v:'Lenovo system or driver update required'}
+];
+const TABS=[
+  {k:'teams',l:'Teams Message',bdg:'bdg-blue'},
+  {k:'root',l:'Root Cause',bdg:'bdg-amber'},
+  {k:'user',l:'User Steps',bdg:'bdg-teal'},
+  {k:'tech',l:'Tech Steps',bdg:'bdg-purple'},
+  {k:'work',l:'Work Note',bdg:'bdg-red'},
+  {k:'close',l:'Closing Note',bdg:'bdg-green'}
+];
+
+let STATE={
+  view:'dashboard',
+  sbCol:false,
+  generating:false,
+  tab:'teams',
+  result:null,
+  lastUser:'',
+  lastIssue:''
+};
+
+function getKey(){return localStorage.getItem('itc_k')||''}
+function setKey(v){localStorage.setItem('itc_k',v)}
+function getModel(){return localStorage.getItem('itc_m')||MODELS[0].v}
+function setModel(v){localStorage.setItem('itc_m',v)}
+function getTickets(){try{return JSON.parse(localStorage.getItem('itc_t')||'[]')}catch{return[]}}
+function saveTickets(a){localStorage.setItem('itc_t',JSON.stringify(a))}
+function getQueue(){try{return JSON.parse(localStorage.getItem('itc_q')||'{"new":[],"active":[],"hold":[],"tbx":[]}')}catch{return{new:[],active:[],hold:[],tbx:[]}}}
+function saveQueue(q){localStorage.setItem('itc_q',JSON.stringify(q))}
+function uuid(){return Date.now().toString(36)+Math.random().toString(36).slice(2)}
+
+// ══════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════
+window.addEventListener('DOMContentLoaded',()=>{
+  if(getKey()){
+    document.getElementById('setupModal').style.display='none';
+    boot();
+  }else{
+    document.getElementById('setupModal').style.display='flex';
+  }
+  document.getElementById('dashDate').textContent=new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+});
+
+function setupSave(){
+  const k=document.getElementById('setupKey').value.trim();
+  if(!k){toast('Enter your API key','error');return;}
+  setKey(k);
+  document.getElementById('setupModal').style.display='none';
+  boot();
+}
+
+function boot(){
+  document.getElementById('mainApp').style.display='flex';
+  // Build model selects
+  const ms=document.getElementById('tModel');
+  ms.innerHTML='';
+  MODELS.forEach(m=>{const o=document.createElement('option');o.value=m.v;o.textContent=m.l;if(m.v===getModel())o.selected=true;ms.appendChild(o);});
+  // Build chips
+  const cc=document.getElementById('chips');
+  cc.innerHTML='';
+  ISSUES.forEach(issue=>{
+    const d=document.createElement('div');
+    d.className='chip';d.textContent=issue.l;
+    d.onclick=()=>{
+      document.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));
+      d.classList.add('on');
+      document.getElementById('tIssue').value=issue.v;
+    };
+    cc.appendChild(d);
+  });
+  setView('dashboard');
+  renderDashboard();
+  updateApiIndicator();
+}
+
+// ══════════════════════════════════════════
+//  VIEWS
+// ══════════════════════════════════════════
+function setView(v){
+  STATE.view=v;
+  ['dashboard','ticket','queue','history'].forEach(id=>{
+    const el=document.getElementById('view-'+id);
+    if(el){el.style.display=id===v?'flex':'none';if(id===v)el.classList.add('view-enter');}
+  });
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('on'));
+  const ni=document.getElementById('nav-'+v);
+  if(ni)ni.classList.add('on');
+  if(v==='dashboard')renderDashboard();
+  if(v==='queue')renderQueue();
+  if(v==='history')renderHistory();
+}
+
+// Fix: dashboard uses flex column
+document.getElementById('view-dashboard').style.display='flex';
+document.getElementById('view-dashboard').style.flexDirection='column';
+
+// ══════════════════════════════════════════
+//  SIDEBAR
+// ══════════════════════════════════════════
+function toggleSb(){
+  STATE.sbCol=!STATE.sbCol;
+  const sb=document.getElementById('sidebar');
+  sb.classList.toggle('col',STATE.sbCol);
+}
+
+// ══════════════════════════════════════════
+//  SETTINGS
+// ══════════════════════════════════════════
+function openSettings(){
+  document.getElementById('settingsKey').value=getKey()?'••••••••••••••••••':'';
+  document.getElementById('settingsKey').placeholder=getKey()?'Key saved (type to replace)':'sk-or-v1-...';
+  document.getElementById('keyStatus').textContent=getKey()?'✓ API key is set':'No key saved';
+  const sm=document.getElementById('settingsModel');
+  sm.innerHTML='';
+  MODELS.forEach(m=>{const o=document.createElement('option');o.value=m.v;o.textContent=m.l;if(m.v===getModel())o.selected=true;sm.appendChild(o);});
+  document.getElementById('settingsModal').style.display='flex';
+}
+function closeSettings(){document.getElementById('settingsModal').style.display='none'}
+function saveSettings(){
+  const k=document.getElementById('settingsKey').value.trim();
+  if(k&&!k.startsWith('•'))setKey(k);
+  setModel(document.getElementById('settingsModel').value);
+  const ms=document.getElementById('tModel');
+  if(ms){Array.from(ms.options).forEach(o=>o.selected=o.value===getModel());}
+  closeSettings();
+  updateApiIndicator();
+  toast('Settings saved','success');
+}
+function clearAll(){
+  if(!confirm('Clear all tickets, queue, and settings?'))return;
+  localStorage.clear();
+  location.reload();
+}
+function updateApiIndicator(){
+  const el=document.getElementById('apiIndicator');
+  if(getKey()){
+    el.innerHTML='<div class="pulsed green"></div><span style="color:rgba(255,255,255,.4)">API Connected</span>';
+  }else{
+    el.innerHTML='<div class="pulsed red"></div><span style="color:rgba(255,255,255,.4)">No API Key</span>';
+  }
+}
+
+// ══════════════════════════════════════════
+//  AI GENERATION
+// ══════════════════════════════════════════
+async function generate(){
+  if(STATE.generating)return;
+  const key=getKey();
+  const user=document.getElementById('tUser').value.trim();
+  const issue=document.getElementById('tIssue').value.trim();
+  const model=document.getElementById('tModel').value;
+  if(!key){toast('Set your API key in Settings','error');openSettings();return;}
+  if(!user){toast('Enter the user name','error');return;}
+  if(!issue){toast('Enter or select an issue','error');return;}
+
+  STATE.generating=true;
+  STATE.result=null;
+  STATE.lastUser=user;
+  STATE.lastIssue=issue;
+
+  const btn=document.getElementById('genBtn');
+  btn.disabled=true;
+  btn.innerHTML='<div class="spinner"></div> Analyzing…';
+
+  show('outEmpty',false);show('outLoading',true);show('outPanel',false);show('outError',false);
+  document.getElementById('addQueueWrap').style.display='none';
+
+  const prompt=`You are an expert IT field support engineer at Maxim Healthcare Services. Analyze the ticket and return ONLY valid JSON — no markdown, no code fences.
+
+User: ${user}
+Issue: ${issue}
+
+JSON keys required:
+{
+  "teams": "Warm Teams message starting: Hi ${user}, I hope you are well! I was looking at your ticket regarding [brief issue summary]. Could you briefly describe what you are experiencing so I can better assist you? I appreciate it!",
+  "root": "2-4 numbered root causes, specific and technical",
+  "user": "Numbered step-by-step instructions for the user in simple non-technical language",
+  "tech": "Numbered advanced troubleshooting steps for the IT engineer — include registry paths, commands, or settings paths where relevant",
+  "work": "ServiceNow internal work note: state what was done, what was communicated, current status (On Hold - Awaiting user response)",
+  "close": "ServiceNow closing note: professional summary of issue, root cause, steps taken, and resolution. Ready to paste when closing."
+}`;
+
+  try{
+    const res=await fetch('https://openrouter.ai/api/v1/chat/completions',{
+      method:'POST',
+      headers:{'Authorization':`Bearer ${key}`,'Content-Type':'application/json','HTTP-Referer':'https://maxim-itc.local','X-Title':'IT Command Center'},
+      body:JSON.stringify({model,messages:[{role:'user',content:prompt}],temperature:0.35,max_tokens:1800})
+    });
+    if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e?.error?.message||`API ${res.status}`);}
+    const data=await res.json();
+    const raw=data.choices?.[0]?.message?.content||'';
+    let parsed;
+    try{
+      const clean=raw.replace(/^```json\s*/i,'').replace(/^```/,'').replace(/```\s*$/,'').trim();
+      parsed=JSON.parse(clean);
+    }catch{throw new Error('AI returned unexpected format. Try again or switch models.');}
+
+    STATE.result=parsed;
+    saveTicketToHistory(user,issue,model,parsed);
+    renderOutput(user,issue,parsed);
+    document.getElementById('addQueueWrap').style.display='flex';
+
+  }catch(err){
+    show('outLoading',false);show('outError',true);
+    document.getElementById('errMsg').textContent=err.message;
+  }finally{
+    STATE.generating=false;
+    btn.disabled=false;
+    btn.innerHTML='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg> Generate Intelligence';
+    show('outLoading',false);
+  }
+}
+
+function renderOutput(user,issue,r){
+  document.getElementById('outUser').textContent=user;
+  document.getElementById('outIssue').textContent=issue.length>70?issue.slice(0,70)+'…':issue;
+  const pri=getPriority(issue);
+  document.getElementById('outPriority').innerHTML=`<span class="bdg ${pri.cls}">${pri.l}</span>`;
+  show('outPanel',true);
+  setTab('teams');
+}
+
+function setTab(k){
+  STATE.tab=k;
+  TABS.forEach(t=>{
+    document.getElementById('tab-'+t.k).classList.toggle('on',t.k===k);
+  });
+  const t=TABS.find(t=>t.k===k);
+  document.getElementById('tabLabel').className=`bdg ${t.bdg}`;
+  document.getElementById('tabLabel').textContent=t.l;
+  const body=document.getElementById('tabBody');
+  body.textContent=STATE.result?.[k]||'No content generated.';
+  document.getElementById('tabCopyBtn').classList.remove('done');
+  document.getElementById('tabCopyBtn').innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> Copy';
+}
+
+function copyTab(){
+  const text=document.getElementById('tabBody').textContent;
+  navigator.clipboard.writeText(text).then(()=>{
+    const b=document.getElementById('tabCopyBtn');
+    b.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Copied!';
+    b.classList.add('done');
+    toast('Copied to clipboard','success');
+    setTimeout(()=>{b.classList.remove('done');b.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> Copy';},2200);
+  });
+}
+
+function copyAll(){
+  if(!STATE.result)return;
+  const r=STATE.result;
+  const text=`USER: ${STATE.lastUser}\nISSUE: ${STATE.lastIssue}\n\n--- TEAMS MESSAGE ---\n${r.teams}\n\n--- ROOT CAUSE ---\n${r.root}\n\n--- USER STEPS ---\n${r.user}\n\n--- TECH STEPS ---\n${r.tech}\n\n--- WORK NOTE ---\n${r.work}\n\n--- CLOSING NOTE ---\n${r.close}`;
+  navigator.clipboard.writeText(text).then(()=>toast('All sections copied!','success'));
+}
+
+// ══════════════════════════════════════════
+//  QUEUE
+// ══════════════════════════════════════════
+function addToQueue(){
+  if(!STATE.result)return;
+  const status=document.getElementById('queueStatus').value;
+  const q=getQueue();
+  const card={id:uuid(),user:STATE.lastUser,issue:STATE.lastIssue,priority:getPriority(STATE.lastIssue).k,addedAt:Date.now(),result:STATE.result};
+  q[status].unshift(card);
+  saveQueue(q);
+  renderQueue();
+  updateQueueCount();
+  toast(`Added to ${status==='hold'?'On Hold':status.charAt(0).toUpperCase()+status.slice(1)} queue`,'success');
+}
+
+function moveCard(id,from,to){
+  const q=getQueue();
+  const idx=q[from].findIndex(c=>c.id===id);
+  if(idx===-1)return;
+  const [card]=q[from].splice(idx,1);
+  if(to==='delete'){saveQueue(q);renderQueue();updateQueueCount();return;}
+  q[to].unshift(card);
+  saveQueue(q);
+  renderQueue();
+  updateQueueCount();
+}
+
+function renderQueue(){
+  const q=getQueue();
+  const cols={new:{el:'col-new',cnt:'cnt-new'},active:{el:'col-active',cnt:'cnt-active'},hold:{el:'col-hold',cnt:'cnt-hold'},tbx:{el:'col-tbx',cnt:'cnt-tbx'}};
+  Object.entries(cols).forEach(([status,{el,cnt}])=>{
+    const col=document.getElementById(el);
+    const count=document.getElementById(cnt);
+    if(!col)return;
+    count.textContent=q[status].length;
+    col.innerHTML='';
+    if(!q[status].length){
+      col.innerHTML='<div style="text-align:center;padding:20px 0;font-size:11px;color:rgba(255,255,255,.18)">Empty</div>';
+      return;
+    }
+    q[status].forEach(card=>{
+      const pri=getPriority(card.issue);
+      const age=timeAgo(card.addedAt);
+      const div=document.createElement('div');
+      div.className='qcard';
+      div.innerHTML=`
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:7px">
+          <span style="font-size:12px;font-weight:700;color:#e2e8f0">${esc(card.user)}</span>
+          <span class="bdg ${pri.cls}" style="flex-shrink:0">${pri.l}</span>
+        </div>
+        <div style="font-size:11px;color:rgba(255,255,255,.4);line-height:1.5;margin-bottom:9px">${esc(card.issue.length>55?card.issue.slice(0,55)+'…':card.issue)}</div>
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <span style="font-size:10px;color:rgba(255,255,255,.25)">${age}</span>
+          <div style="display:flex;gap:5px">${getMoveButtons(card.id,status)}</div>
+        </div>`;
+      col.appendChild(div);
+    });
+  });
+}
+
+function getMoveButtons(id,status){
+  const opts={new:'active',active:'hold',hold:'tbx'};
+  const labels={new:'Active →',active:'Hold →',hold:'TBX →'};
+  let btns='';
+  if(opts[status]){
+    btns+=`<button onclick="moveCard('${id}','${status}','${opts[status]}')" style="font-size:10px;font-weight:600;padding:3px 8px;border-radius:6px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.5);cursor:pointer">${labels[status]}</button>`;
+  }
+  btns+=`<button onclick="moveCard('${id}','${status}','delete')" style="font-size:10px;padding:3px 7px;border-radius:6px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);color:rgba(239,68,68,.6);cursor:pointer">✕</button>`;
+  return btns;
+}
+
+function updateQueueCount(){
+  const q=getQueue();
+  const total=Object.values(q).reduce((a,b)=>a+b.length,0);
+  const el=document.getElementById('navQueueCount');
+  if(el)el.textContent=total||'';
+  const sa=document.getElementById('statActive');
+  const sh=document.getElementById('statHold');
+  const st=document.getElementById('statTbx');
+  if(sa)sa.textContent=q.active.length;
+  if(sh)sh.textContent=q.hold.length;
+  if(st)st.textContent=q.tbx.length;
+}
+
+// ══════════════════════════════════════════
+//  HISTORY
+// ══════════════════════════════════════════
+function saveTicketToHistory(user,issue,model,result){
+  const tickets=getTickets();
+  tickets.unshift({id:uuid(),user,issue,model,createdAt:Date.now(),result});
+  if(tickets.length>50)tickets.pop();
+  saveTickets(tickets);
+}
+
+function renderHistory(){
+  const q=(document.getElementById('histSearch')?.value||'').toLowerCase();
+  const tickets=getTickets().filter(t=>!q||t.user.toLowerCase().includes(q)||t.issue.toLowerCase().includes(q));
+  const el=document.getElementById('histList');
+  if(!el)return;
+  if(!tickets.length){el.innerHTML='<div style="text-align:center;padding:40px 0;font-size:13px;color:rgba(255,255,255,.25)">No tickets found</div>';return;}
+  el.innerHTML='';
+  tickets.forEach(t=>{
+    const pri=getPriority(t.issue);
+    const div=document.createElement('div');
+    div.className='hcard';
+    div.innerHTML=`
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="flex:1">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+            <span style="font-size:13px;font-weight:700">${esc(t.user)}</span>
+            <span class="bdg ${pri.cls}">${pri.l}</span>
+          </div>
+          <div style="font-size:12px;color:rgba(255,255,255,.4)">${esc(t.issue.length>80?t.issue.slice(0,80)+'…':t.issue)}</div>
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <div style="font-size:10px;color:rgba(255,255,255,.25)">${timeAgo(t.createdAt)}</div>
+          <button onclick="reloadTicket('${t.id}')" style="margin-top:6px;font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px;background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.22);color:#93c5fd;cursor:pointer">Load →</button>
+        </div>
+      </div>`;
+    el.appendChild(div);
+  });
+}
+
+function reloadTicket(id){
+  const t=getTickets().find(x=>x.id===id);
+  if(!t)return;
+  setView('ticket');
+  document.getElementById('tUser').value=t.user;
+  document.getElementById('tIssue').value=t.issue;
+  STATE.result=t.result;
+  STATE.lastUser=t.user;
+  STATE.lastIssue=t.issue;
+  document.getElementById('outUser').textContent=t.user;
+  document.getElementById('outIssue').textContent=t.issue.length>70?t.issue.slice(0,70)+'…':t.issue;
+  const pri=getPriority(t.issue);
+  document.getElementById('outPriority').innerHTML=`<span class="bdg ${pri.cls}">${pri.l}</span>`;
+  show('outEmpty',false);show('outPanel',true);show('outLoading',false);show('outError',false);
+  document.getElementById('addQueueWrap').style.display='flex';
+  setTab('teams');
+}
+
+function clearHistory(){
+  if(!confirm('Clear all ticket history?'))return;
+  saveTickets([]);
+  renderHistory();
+  toast('History cleared','info');
+}
+
+// ══════════════════════════════════════════
+//  DASHBOARD
+// ══════════════════════════════════════════
+function renderDashboard(){
+  updateQueueCount();
+  const today=new Date().toDateString();
+  const todayCount=getTickets().filter(t=>new Date(t.createdAt).toDateString()===today).length;
+  const el=document.getElementById('statToday');
+  if(el)el.textContent=todayCount;
+  const recent=getTickets().slice(0,5);
+  const rl=document.getElementById('recentList');
+  if(!rl)return;
+  if(!recent.length){rl.innerHTML='<div style="font-size:13px;color:rgba(255,255,255,.25);padding:20px 0;text-align:center">No tickets yet — generate your first one</div>';return;}
+  rl.innerHTML='';
+  recent.forEach(t=>{
+    const pri=getPriority(t.issue);
+    const div=document.createElement('div');
+    div.className='hcard';
+    div.onclick=()=>{reloadTicket(t.id)};
+    div.innerHTML=`<div style="display:flex;align-items:center;gap:10px"><div style="flex:1"><span style="font-size:13px;font-weight:600">${esc(t.user)}</span> <span class="bdg ${pri.cls}" style="margin-left:4px">${pri.l}</span><div style="font-size:11px;color:rgba(255,255,255,.35);margin-top:3px">${esc(t.issue.length>70?t.issue.slice(0,70)+'…':t.issue)}</div></div><span style="font-size:10px;color:rgba(255,255,255,.25);flex-shrink:0">${timeAgo(t.createdAt)}</span></div>`;
+    rl.appendChild(div);
+  });
+}
+
+// ══════════════════════════════════════════
+//  HELPERS
+// ══════════════════════════════════════════
+function getPriority(issue){
+  const i=issue.toLowerCase();
+  if(i.includes('liquid')||i.includes('spill')||i.includes('crack')||i.includes('broken'))return{k:'high',l:'High',cls:'bdg-red'};
+  if(i.includes('wi-fi')||i.includes('wifi')||i.includes('teams')||i.includes('monitor')||i.includes('verizon'))return{k:'medium',l:'Medium',cls:'bdg-amber'};
+  return{k:'low',l:'Low',cls:'bdg-green'};
+}
+function timeAgo(ts){
+  const s=Math.floor((Date.now()-ts)/1000);
+  if(s<60)return'just now';
+  if(s<3600)return Math.floor(s/60)+'m ago';
+  if(s<86400)return Math.floor(s/3600)+'h ago';
+  return Math.floor(s/86400)+'d ago';
+}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function show(id,v){const e=document.getElementById(id);if(e)e.style.display=v?'flex':'none'}
+function toast(msg,type='info'){
+  const c=document.getElementById('toast');
+  const div=document.createElement('div');
+  const colors={success:'background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.3);color:#86efac',error:'background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);color:#fca5a5',info:'background:rgba(59,130,246,.15);border:1px solid rgba(59,130,246,.3);color:#93c5fd'};
+  div.style.cssText=`${colors[type]||colors.info};padding:10px 16px;border-radius:9px;font-size:12px;font-weight:600;backdrop-filter:blur(12px);animation:vslide .3s cubic-bezier(.16,1,.3,1);pointer-events:all`;
+  div.textContent=msg;
+  c.appendChild(div);
+  setTimeout(()=>div.remove(),2800);
+}
+
+// Keyboard shortcut
+document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){if(STATE.view==='ticket')generate();}});
+</script>
+</body>
+</html>
