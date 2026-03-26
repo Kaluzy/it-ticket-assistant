@@ -823,26 +823,37 @@ async function generate(){
   show('outEmpty',false);show('outLoading',true);show('outPanel',false);show('outError',false);
   document.getElementById('addQueueWrap').style.display='none';
 
-  const sysMsg=`You are an expert IT field support engineer at Maxim Healthcare Services.
-Analyze IT support tickets and return structured JSON.
-CRITICAL RULES:
-1. Return ONLY a valid JSON object — no markdown, no code fences, no explanations outside the JSON.
-2. The JSON must have exactly 6 keys: teams, root, user, tech, work, close.
-3. Each key MUST contain completely DIFFERENT content — never copy or repeat the same text across fields.
-4. Each field serves a totally different purpose — read each description carefully and stay on topic.`;
+  const sysMsg=`You are a senior IT support engineer, systems administrator, and field technician with 15+ years of enterprise experience at Maxim Healthcare Services.
+
+When analyzing any issue, you think like a cross-disciplined expert who synthesizes knowledge from:
+- Microsoft Learn, KB articles, TechNet, and official Microsoft documentation
+- r/sysadmin, r/techsupport, r/Windows, r/MDM, r/Intune, r/Office365 — real-world community fixes
+- Server Fault, Super User, Stack Overflow — verified technical solutions
+- Spiceworks Community — IT pro peer knowledge base
+- Lenovo, Dell, HP, Apple enterprise support knowledge bases
+- ITIL best practices for incident documentation
+- Healthcare IT compliance context (HIPAA-aware, domain-joined environments, Intune/MDM managed devices)
+
+Your analysis must reflect the BEST KNOWN FIX from these communities — not generic advice. Think: "What would a top-voted r/sysadmin post or a Microsoft KB article say about this exact issue?"
+
+CRITICAL OUTPUT RULES:
+1. Return ONLY a valid JSON object — no markdown, no code fences, no text outside the JSON.
+2. Exactly 6 keys: teams, root, user, tech, work, close.
+3. Every key must have COMPLETELY DIFFERENT content — no repeating across fields.
+4. Each field has a unique purpose — read the description and stay strictly on topic.`;
 
   const userMsg=`Ticket details:
 User: ${user}
-Issue: ${issue}${tried?`\nPrevious service desk attempts: ${tried}\n(Use as diagnostic context — build from what was already tried)`:''}
+Issue: ${issue}${tried?`\nPrevious service desk attempts: ${tried}\n(Build on what was already tried — do not repeat failed steps)`:''}
 
-Return this exact JSON with DISTINCT content in every field:
+Synthesize the BEST knowledge from Microsoft docs, r/sysadmin, Spiceworks, Server Fault, and enterprise KB articles to fill this JSON with DISTINCT content in every field:
 {
-  "teams": "A short, warm Microsoft Teams message addressed to ${user}. Greet them, mention you saw their ticket about [brief topic], and ask them to describe what they are experiencing. Friendly tone. 2-3 sentences max.",
-  "root": "Numbered list of 2-4 technical root causes specific to this issue type. Each cause should be a distinct technical reason. Format: 1. ... 2. ... etc.",
-  "user": "Numbered step-by-step self-help instructions written in plain non-technical language for the END USER to try. Simple, clear, no jargon. Format: 1. ... 2. ... etc.",
-  "tech": "Numbered advanced troubleshooting steps for the IT ENGINEER only. Include PowerShell commands, registry paths, admin console navigation, or diagnostic tools specific to this issue. Format: 1. ... 2. ... etc.",
-  "work": "ServiceNow INTERNAL work note. Document: what was done so far, what was communicated to the user, and set status to On Hold - Awaiting user response. Professional internal tone.",
-  "close": "ServiceNow CLOSING note. Professional summary covering: issue reported, confirmed root cause, all steps taken to resolve, and final resolution status. Ready to paste when ticket is resolved."
+  "teams": "A short, warm Microsoft Teams message addressed to ${user}. Greet them, reference their ticket about [brief topic], and ask them to describe what they are experiencing. Friendly, professional tone. 2-3 sentences max.",
+  "root": "Numbered list of 2-4 specific technical root causes for this exact issue. Draw from real-world known causes (Microsoft KB, community reports). Each cause must be technically distinct. Format: 1. ... 2. ... etc.",
+  "user": "Numbered step-by-step self-help instructions for the END USER in plain non-technical language. Simple, no jargon, actionable. Based on solutions that actually work in the field. Format: 1. ... 2. ... etc.",
+  "tech": "Numbered advanced troubleshooting steps for the IT ENGINEER. Include exact PowerShell commands, registry paths (HKLM/HKCU), Event Viewer logs to check, Group Policy paths, Intune/MDM commands, or admin console steps. Reference specific tools (WinGet, DISM, SFC, etc.) where applicable. Format: 1. ... 2. ... etc.",
+  "work": "ServiceNow INTERNAL work note. State: what was investigated, what was communicated to the user, any findings so far, and current status (On Hold - Awaiting user response). Internal professional tone.",
+  "close": "ServiceNow CLOSING note. Professional summary: issue reported, confirmed root cause, exact resolution steps taken, and final status. Ready to paste when closing the ticket."
 }`;
 
   try{
