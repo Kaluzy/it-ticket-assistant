@@ -200,7 +200,7 @@ textarea.inp{resize:vertical;min-height:88px;line-height:1.6}
     <div style="display:flex;align-items:center;gap:8px">
       <div style="width:28px;height:28px;background:linear-gradient(135deg,#2563eb,#0891b2);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;color:#fff">IT</div>
       <span style="font-size:13px;font-weight:700;color:rgba(255,255,255,.9)">Command Center</span>
-      <span style="font-size:10px;color:rgba(255,255,255,.25);font-weight:500">Maxim Healthcare · v3.4</span>
+      <span style="font-size:10px;color:rgba(255,255,255,.25);font-weight:500">Maxim Healthcare · v3.5</span>
     </div>
     <div style="flex:1"></div>
     <div id="apiIndicator" style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600">
@@ -305,16 +305,25 @@ textarea.inp{resize:vertical;min-height:88px;line-height:1.6}
 
           <!-- LEFT: Form -->
           <div style="border-right:1px solid rgba(255,255,255,.06);overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:14px">
-            <div style="display:flex;align-items:center;justify-content:space-between">
-  <div>
-    <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px">New Ticket</div>
-    <h2 style="font-size:17px;font-weight:800">Ticket Intelligence</h2>
-  </div>
-  <button onclick="openSnImport()" style="display:flex;align-items:center;gap:6px;padding:7px 12px;border-radius:8px;background:rgba(99,102,241,.15);border:1px solid rgba(99,102,241,.3);color:#a5b4fc;font-size:11px;font-weight:700;cursor:pointer">
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-    Import from SN
-  </button>
-</div>
+            <!-- Form header: title + actions row -->
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+              <div>
+                <div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:3px">Create Ticket</div>
+                <h2 style="font-size:17px;font-weight:800">Ticket Intelligence</h2>
+              </div>
+              <div style="display:flex;gap:6px;align-items:center;flex-shrink:0">
+                <!-- Live queue count jump button -->
+                <button onclick="setView('queue')" id="formQueueBtn" style="display:flex;align-items:center;gap:5px;padding:6px 11px;border-radius:8px;background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.25);color:#93c5fd;font-size:11px;font-weight:700;cursor:pointer">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="5" height="18"/><rect x="10" y="3" width="5" height="18"/><rect x="17" y="3" width="5" height="18"/></svg>
+                  Queue <span id="formQueueCount" style="background:rgba(59,130,246,.35);padding:1px 6px;border-radius:100px;font-size:10px;margin-left:2px">0</span>
+                </button>
+                <!-- Import from SN -->
+                <button onclick="openSnImport()" style="display:flex;align-items:center;gap:5px;padding:6px 11px;border-radius:8px;background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.25);color:#a5b4fc;font-size:11px;font-weight:700;cursor:pointer">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                  Import SN
+                </button>
+              </div>
+            </div>
             <div>
   <label style="font-size:11px;font-weight:600;color:rgba(255,255,255,.4);display:block;margin-bottom:5px">Ticket Number <span style="color:rgba(255,255,255,.2);font-weight:400">(optional)</span></label>
   <input class="inp" type="text" id="tInc" placeholder="e.g. INC0123456"/>
@@ -348,10 +357,16 @@ textarea.inp{resize:vertical;min-height:88px;line-height:1.6}
               <label style="font-size:11px;font-weight:600;color:rgba(255,255,255,.4);display:block;margin-bottom:5px">AI Model</label>
               <select class="inp" id="tModel"></select>
             </div>
-            <button class="btn-glow" id="genBtn" onclick="generate()" style="width:100%;padding:12px;border-radius:10px;font-size:14px;font-weight:700;color:#fff;display:flex;align-items:center;justify-content:center;gap:8px">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-              Generate Intelligence
-            </button>
+            <div style="display:flex;gap:8px">
+              <button class="btn-glow" id="genBtn" onclick="generate()" style="flex:1;padding:12px;border-radius:10px;font-size:14px;font-weight:700;color:#fff;display:flex;align-items:center;justify-content:center;gap:8px">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                Generate
+              </button>
+              <button onclick="resetForm()" title="Clear all fields" style="padding:12px 14px;border-radius:10px;font-size:12px;font-weight:700;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.4);cursor:pointer;display:flex;align-items:center;gap:5px;transition:all .15s" onmouseover="this.style.background='rgba(239,68,68,.1)';this.style.borderColor='rgba(239,68,68,.3)';this.style.color='#fca5a5'" onmouseout="this.style.background='rgba(255,255,255,.05)';this.style.borderColor='rgba(255,255,255,.1)';this.style.color='rgba(255,255,255,.4)'">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.32"/></svg>
+                Clear
+              </button>
+            </div>
             <!-- Add to queue (shows after generation) -->
             <div id="addQueueWrap" style="display:none;gap:8px;flex-direction:column">
               <div style="height:1px;background:rgba(255,255,255,.07)"></div>
@@ -409,10 +424,6 @@ textarea.inp{resize:vertical;min-height:88px;line-height:1.6}
                 <button onclick="copyAll()" class="btn-sm" style="display:flex;align-items:center;gap:5px;flex-shrink:0">
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
                   Copy All
-                </button>
-                <button onclick="resetForm()" class="btn-sm" title="Clear and start a new ticket" style="display:flex;align-items:center;gap:5px;flex-shrink:0;background:rgba(99,102,241,.12);border-color:rgba(99,102,241,.28);color:#a5b4fc">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                  New Ticket
                 </button>
               </div>
               <!-- Tabs -->
@@ -979,14 +990,18 @@ function addToQueue(){
   saveQueue(q);
   renderQueue();
   updateQueueCount();
-  toast(`Added to ${status==='hold'?'On Hold':status.charAt(0).toUpperCase()+status.slice(1)} queue`,'success');
+  const label=status==='hold'?'On Hold':status==='tbx'?'To Be Closed':status.charAt(0).toUpperCase()+status.slice(1);
+  toast(`Ticket added to ${label} — opening queue…`,'success');
   resetForm();
+  // Navigate to queue after a beat so the toast is visible
+  setTimeout(()=>setView('queue'),600);
 }
 
 function resetForm(){
   document.getElementById('tUser').value='';
   document.getElementById('tIssue').value='';
   document.getElementById('tTried').value='';
+  const incEl=document.getElementById('tInc');if(incEl)incEl.value='';
   STATE.result=null;STATE.lastUser='';STATE.lastIssue='';
   show('outEmpty',true);show('outPanel',false);show('outLoading',false);show('outError',false);
   document.getElementById('addQueueWrap').style.display='none';
@@ -1085,6 +1100,9 @@ function updateQueueCount(){
   const total=Object.values(q).reduce((a,b)=>a+b.length,0);
   const el=document.getElementById('navQueueCount');
   if(el)el.textContent=total||'';
+  // Also update the in-form queue jump button count
+  const fqc=document.getElementById('formQueueCount');
+  if(fqc)fqc.textContent=total||'0';
   const sa=document.getElementById('statActive');
   const sh=document.getElementById('statHold');
   const st=document.getElementById('statTbx');
