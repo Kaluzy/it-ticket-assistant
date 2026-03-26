@@ -159,18 +159,28 @@ textarea.inp{resize:vertical;min-height:88px;line-height:1.6}
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
       <div>
         <h2 style="font-size:16px;font-weight:800">Import from ServiceNow</h2>
-        <p style="font-size:11px;color:rgba(255,255,255,.35);margin-top:3px">Paste ticket text and AI will auto-fill your form</p>
+        <p style="font-size:11px;color:rgba(255,255,255,.35);margin-top:3px">Upload your exported CSV or Excel file</p>
       </div>
       <button onclick="closeSnImport()" style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:5px 10px;color:rgba(255,255,255,.5);cursor:pointer;font-size:12px">✕</button>
     </div>
     <div style="padding:10px 13px;background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.2);border-radius:9px;margin-bottom:14px;font-size:11px;color:rgba(255,255,255,.45);line-height:1.7">
-      In ServiceNow → open the ticket → select all text (Ctrl+A) → copy (Ctrl+C) → paste below. Or just paste the description and notes manually.
+      In ServiceNow → My Assigned Tickets → click the export icon → select <strong style="color:#a5b4fc">Excel</strong> or <strong style="color:#a5b4fc">CSV</strong> → upload the file below.
     </div>
-    <label style="font-size:11px;font-weight:700;color:rgba(255,255,255,.4);letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:7px">Paste Ticket Content</label>
-    <textarea class="inp" id="snPasteArea" placeholder="Paste ServiceNow ticket content here…" style="min-height:160px;margin-bottom:14px;line-height:1.6"></textarea>
-    <button class="btn-glow" id="snParseBtn" onclick="parseSnTicket()" style="width:100%;padding:11px;border-radius:9px;font-size:13px;font-weight:700;color:#fff;display:flex;align-items:center;justify-content:center;gap:8px">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-      Parse & Auto-Fill Form
+    <!-- Drop zone -->
+    <div id="snDropZone" onclick="document.getElementById('snFileInput').click()" ondragover="snDragOver(event)" ondragleave="snDragLeave(event)" ondrop="snDrop(event)" style="border:2px dashed rgba(99,102,241,.3);border-radius:12px;padding:32px 20px;text-align:center;cursor:pointer;transition:all .2s;margin-bottom:14px;background:rgba(99,102,241,.05)">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="rgba(99,102,241,.6)" stroke-width="1.5" style="margin:0 auto 10px;display:block"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      <div style="font-size:13px;font-weight:700;color:rgba(255,255,255,.6);margin-bottom:4px">Drop file here or click to browse</div>
+      <div style="font-size:11px;color:rgba(255,255,255,.3)">.csv or .xlsx files from ServiceNow</div>
+    </div>
+    <input type="file" id="snFileInput" accept=".csv,.xlsx,.xls" style="display:none" onchange="snFileSelected(this)"/>
+    <!-- Preview table -->
+    <div id="snPreview" style="display:none;margin-bottom:14px">
+      <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,.35);letter-spacing:.07em;text-transform:uppercase;margin-bottom:8px">Tickets Found — Select to Import</div>
+      <div style="max-height:220px;overflow-y:auto;display:flex;flex-direction:column;gap:6px" id="snTicketList"></div>
+    </div>
+    <button class="btn-glow" id="snImportBtn" onclick="importSelectedTickets()" style="display:none;width:100%;padding:11px;border-radius:9px;font-size:13px;font-weight:700;color:#fff;align-items:center;justify-content:center;gap:8px">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      Import Selected to Queue
     </button>
     <p id="snParseStatus" style="text-align:center;margin-top:10px;font-size:12px;color:rgba(255,255,255,.35)"></p>
   </div>
@@ -1079,64 +1089,143 @@ function toggleTraining(){
 }
 
 // ══════════════════════════════════════════
-//  SERVICENOW IMPORT
+//  SERVICENOW IMPORT (CSV/Excel)
 // ══════════════════════════════════════════
+let snParsedTickets=[];
+let snSelectedIds=new Set();
+
 function openSnImport(){document.getElementById('snModal').style.display='flex';}
-function closeSnImport(){document.getElementById('snModal').style.display='none';}
+function closeSnImport(){
+  document.getElementById('snModal').style.display='none';
+  document.getElementById('snPreview').style.display='none';
+  document.getElementById('snImportBtn').style.display='none';
+  document.getElementById('snTicketList').innerHTML='';
+  document.getElementById('snFileInput').value='';
+  document.getElementById('snParseStatus').textContent='';
+  snParsedTickets=[];snSelectedIds=new Set();
+}
 
-async function parseSnTicket(){
-  const text=document.getElementById('snPasteArea').value.trim();
-  if(!text){toast('Paste ticket content first','error');return;}
-  const btn=document.getElementById('snParseBtn');
+function snDragOver(e){e.preventDefault();document.getElementById('snDropZone').style.borderColor='rgba(99,102,241,.7)';document.getElementById('snDropZone').style.background='rgba(99,102,241,.12)';}
+function snDragLeave(){document.getElementById('snDropZone').style.borderColor='rgba(99,102,241,.3)';document.getElementById('snDropZone').style.background='rgba(99,102,241,.05)';}
+function snDrop(e){e.preventDefault();snDragLeave();const f=e.dataTransfer.files[0];if(f)processSnFile(f);}
+function snFileSelected(inp){if(inp.files[0])processSnFile(inp.files[0]);}
+
+function processSnFile(file){
   const status=document.getElementById('snParseStatus');
-  btn.disabled=true;
-  btn.innerHTML='<div class="spinner"></div> Parsing…';
-  status.textContent='AI is reading the ticket…';
-
-  const isGoogle=getProvider()==='google';
-  const key=isGoogle?getGoogleKey():getKey();
-  if(!key){toast('Set your API key in Settings first','error');btn.disabled=false;btn.innerHTML='Parse & Auto-Fill Form';return;}
-
-  const prompt=`Extract information from this ServiceNow ticket text and return ONLY valid JSON — no markdown, no code fences.
-
-${text}
-
-Return this exact JSON:
-{
-  "inc": "ticket number like INC0123456 or empty string",
-  "user": "caller/requester name or empty string",
-  "issue": "clean concise description of the issue reported",
-  "tried": "what was already attempted or tried, or empty string"
-}`;
-
-  try{
-    const endpoint=isGoogle?'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions':'https://openrouter.ai/api/v1/chat/completions';
-    const modelId=isGoogle?getGoogleModel():getModel();
-    const headers={'Authorization':`Bearer ${key}`,'Content-Type':'application/json'};
-    if(!isGoogle){headers['HTTP-Referer']='https://maxim-itc.local';headers['X-Title']='IT Command Center';}
-    const res=await fetch(endpoint,{method:'POST',headers,body:JSON.stringify({model:modelId,messages:[{role:'user',content:prompt}],temperature:0.1,max_tokens:400})});
-    const data=await res.json();
-    const raw=data.choices?.[0]?.message?.content||'';
-    let parsed;
+  status.textContent='Reading file…';
+  const reader=new FileReader();
+  reader.onload=function(e){
     try{
-      const match=raw.replace(/^```json\s*/i,'').replace(/^```\s*/,'').replace(/```\s*$/,'').trim().match(/\{[\s\S]*\}/);
-      parsed=JSON.parse(match?.[0]||raw);
-    }catch{throw new Error('Could not parse response');}
-    // Auto-fill form
-    if(parsed.inc)document.getElementById('tInc').value=parsed.inc;
-    if(parsed.user)document.getElementById('tUser').value=parsed.user;
-    if(parsed.issue)document.getElementById('tIssue').value=parsed.issue;
-    if(parsed.tried)document.getElementById('tTried').value=parsed.tried;
-    closeSnImport();
-    toast('Form auto-filled from ticket!','success');
-    setView('ticket');
-  }catch(err){
-    status.textContent='Error: '+err.message;
-    toast('Parse failed — try again','error');
-  }finally{
-    btn.disabled=false;
-    btn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg> Parse & Auto-Fill Form';
+      let rows=[];
+      if(file.name.endsWith('.csv')||file.name.endsWith('.txt')){
+        rows=parseCSV(e.target.result);
+      }else{
+        // For xlsx, try to parse as CSV-like (basic support)
+        // Many SN xlsx exports can be read as tab/comma separated
+        rows=parseCSV(e.target.result);
+      }
+      if(!rows.length){status.textContent='No data found in file.';return;}
+      renderSnPreview(rows);
+      status.textContent=`Found ${rows.length} ticket(s)`;
+    }catch(err){status.textContent='Error reading file: '+err.message;}
+  };
+  reader.readAsText(file);
+}
+
+function parseCSV(text){
+  const lines=text.split(/\r?\n/).filter(l=>l.trim());
+  if(lines.length<2)return[];
+  // Detect delimiter
+  const delim=lines[0].includes('\t')?'\t':',';
+  const headers=splitCSVLine(lines[0],delim).map(h=>h.trim().replace(/^"|"$/g,'').toLowerCase());
+  const rows=[];
+  for(let i=1;i<lines.length;i++){
+    const vals=splitCSVLine(lines[i],delim);
+    const obj={};
+    headers.forEach((h,idx)=>{obj[h]=(vals[idx]||'').trim().replace(/^"|"$/g,'');});
+    // Map common ServiceNow column names
+    const ticket={
+      inc: obj['number']||obj['incident']||obj['ticket']||obj['inc#']||obj['ticket number']||'',
+      user: obj['caller']||obj['caller id']||obj['requested for']||obj['opened by']||obj['user']||obj['name']||'',
+      issue: obj['short description']||obj['description']||obj['subject']||obj['summary']||obj['issue']||'',
+      state: obj['state']||obj['status']||'',
+      priority: obj['priority']||'',
+      group: obj['assignment group']||obj['assigned group']||''
+    };
+    if(ticket.inc||ticket.issue)rows.push(ticket);
   }
+  return rows;
+}
+
+function splitCSVLine(line,delim){
+  const result=[];let cur='';let inQ=false;
+  for(let i=0;i<line.length;i++){
+    if(line[i]==='"')inQ=!inQ;
+    else if(line[i]===delim&&!inQ){result.push(cur);cur='';}
+    else cur+=line[i];
+  }
+  result.push(cur);return result;
+}
+
+function renderSnPreview(rows){
+  snParsedTickets=rows;
+  snSelectedIds=new Set(rows.map((_,i)=>i));
+  const list=document.getElementById('snTicketList');
+  list.innerHTML='';
+  rows.forEach((t,i)=>{
+    const div=document.createElement('div');
+    div.style.cssText='display:flex;align-items:flex-start;gap:10px;padding:10px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:8px;cursor:pointer;transition:all .15s';
+    div.onclick=()=>toggleSnRow(i,div);
+    div.id='snrow-'+i;
+    div.innerHTML=`
+      <div style="width:16px;height:16px;border-radius:4px;border:1.5px solid rgba(99,102,241,.5);background:rgba(99,102,241,.3);flex-shrink:0;margin-top:1px;display:flex;align-items:center;justify-content:center" id="sncheck-${i}">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#a5b4fc" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:7px;margin-bottom:3px">
+          ${t.inc?`<span style="font-size:10px;font-weight:700;color:#a5b4fc">${esc(t.inc)}</span>`:''}
+          ${t.user?`<span style="font-size:11px;font-weight:600;color:#e2e8f0">${esc(t.user)}</span>`:''}
+          ${t.priority?`<span class="bdg bdg-amber" style="font-size:9px">${esc(t.priority)}</span>`:''}
+        </div>
+        <div style="font-size:11px;color:rgba(255,255,255,.5);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(t.issue||'No description')}</div>
+      </div>`;
+    list.appendChild(div);
+  });
+  document.getElementById('snPreview').style.display='block';
+  document.getElementById('snImportBtn').style.display='flex';
+}
+
+function toggleSnRow(i,div){
+  if(snSelectedIds.has(i)){
+    snSelectedIds.delete(i);
+    div.style.opacity='.4';
+    document.getElementById('sncheck-'+i).style.background='transparent';
+  }else{
+    snSelectedIds.add(i);
+    div.style.opacity='1';
+    document.getElementById('sncheck-'+i).style.background='rgba(99,102,241,.3)';
+  }
+}
+
+function importSelectedTickets(){
+  const selected=[...snSelectedIds].map(i=>snParsedTickets[i]);
+  if(!selected.length){toast('Select at least one ticket','error');return;}
+  const q=getQueue();
+  selected.forEach(t=>{
+    const card={
+      id:uuid(),user:t.user||'Unknown',
+      issue:t.issue||'No description',
+      inc:t.inc,priority:getPriority(t.issue).k,
+      addedAt:Date.now(),result:null,fromSN:true
+    };
+    q.new.unshift(card);
+  });
+  saveQueue(q);
+  renderQueue();
+  updateQueueCount();
+  closeSnImport();
+  toast(`${selected.length} ticket(s) imported to New queue`,'success');
+  setView('queue');
 }
 
 // Keyboard shortcut
