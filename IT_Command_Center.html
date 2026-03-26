@@ -172,12 +172,14 @@ textarea.inp{resize:vertical;min-height:88px;line-height:1.6}
     <!-- OpenRouter panel -->
     <div id="setupPanel-or">
       <label style="font-size:11px;font-weight:700;color:rgba(255,255,255,.4);letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:7px">OpenRouter API Key</label>
-      <div style="position:relative;margin-bottom:10px">
-        <input class="inp" type="text" id="setupKey" placeholder="sk-or-v1-..." autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" style="font-family:monospace;padding-right:44px;font-size:13px"/>
-        <button onclick="toggleSetupVis('setupKey',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:rgba(255,255,255,.3);cursor:pointer;font-size:11px;padding:4px">SHOW</button>
-      </div>
+      <input class="inp" type="text" id="setupKey" placeholder="Tap Paste Key below or type here…" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" style="font-family:monospace;font-size:15px;margin-bottom:8px"/>
+      <button onclick="pasteKey('setupKey')" style="width:100%;padding:12px;border-radius:10px;font-size:13px;font-weight:700;background:rgba(59,130,246,.15);border:1.5px solid rgba(59,130,246,.4);color:#93c5fd;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:14px">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
+        📋 Paste Key from Clipboard
+      </button>
+      <p id="setupKeyPreview" style="font-size:11px;color:rgba(34,197,94,.7);margin-bottom:14px;min-height:16px;word-break:break-all"></p>
       <p style="font-size:11px;color:rgba(255,255,255,.25);margin-bottom:16px;line-height:1.6">Free key at <span style="color:#60a5fa">openrouter.ai</span> — stored on this device only</p>
-      <button class="btn-glow" style="width:100%;padding:13px;border-radius:10px;font-size:14px;font-weight:700;color:#fff" onclick="setupSave('or')">Connect &amp; Launch →</button>
+      <button class="btn-glow" style="width:100%;padding:13px;border-radius:10px;font-size:15px;font-weight:700;color:#fff" onclick="setupSave('or')">Connect &amp; Launch →</button>
     </div>
 
     <!-- Google panel -->
@@ -186,12 +188,14 @@ textarea.inp{resize:vertical;min-height:88px;line-height:1.6}
         Free at <span style="color:#60a5fa">aistudio.google.com</span> → Get API Key
       </div>
       <label style="font-size:11px;font-weight:700;color:rgba(255,255,255,.4);letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:7px">Google AI Studio Key</label>
-      <div style="position:relative;margin-bottom:10px">
-        <input class="inp" type="text" id="setupGKey" placeholder="AIza..." autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" style="font-family:monospace;padding-right:44px;font-size:13px"/>
-        <button onclick="toggleSetupVis('setupGKey',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:rgba(255,255,255,.3);cursor:pointer;font-size:11px;padding:4px">SHOW</button>
-      </div>
+      <input class="inp" type="text" id="setupGKey" placeholder="Tap Paste Key below or type here…" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" style="font-family:monospace;font-size:15px;margin-bottom:8px"/>
+      <button onclick="pasteKey('setupGKey')" style="width:100%;padding:12px;border-radius:10px;font-size:13px;font-weight:700;background:rgba(59,130,246,.15);border:1.5px solid rgba(59,130,246,.4);color:#93c5fd;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:14px">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/></svg>
+        📋 Paste Key from Clipboard
+      </button>
+      <p id="setupGKeyPreview" style="font-size:11px;color:rgba(34,197,94,.7);margin-bottom:14px;min-height:16px;word-break:break-all"></p>
       <p style="font-size:11px;color:rgba(255,255,255,.25);margin-bottom:16px">No credit card · Gemini 2.0 Flash is completely free</p>
-      <button class="btn-glow" style="width:100%;padding:13px;border-radius:10px;font-size:14px;font-weight:700;color:#fff" onclick="setupSave('google')">Connect &amp; Launch →</button>
+      <button class="btn-glow" style="width:100%;padding:13px;border-radius:10px;font-size:15px;font-weight:700;color:#fff" onclick="setupSave('google')">Connect &amp; Launch →</button>
     </div>
 
     <p style="text-align:center;margin-top:12px;font-size:11px;color:rgba(255,255,255,.2)">You can update this anytime in Settings</p>
@@ -927,6 +931,28 @@ window.addEventListener('DOMContentLoaded',()=>{
   }
   document.getElementById('dashDate').textContent=new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
 });
+
+async function pasteKey(fieldId){
+  try{
+    const text=await navigator.clipboard.readText();
+    const trimmed=text.trim();
+    if(!trimmed){toast('Clipboard is empty — copy your key first','error');return;}
+    document.getElementById(fieldId).value=trimmed;
+    // Show masked preview so user can confirm it pasted correctly
+    const previewId=fieldId+'Preview';
+    const preview=document.getElementById(previewId);
+    if(preview){
+      const masked=trimmed.slice(0,8)+'••••••••••••'+trimmed.slice(-4);
+      preview.textContent='✓ Pasted: '+masked;
+    }
+    toast('Key pasted — tap Connect & Launch','success');
+  }catch(e){
+    // Fallback: focus the field and let the user paste manually
+    const f=document.getElementById(fieldId);
+    if(f){f.focus();f.select();}
+    toast('Tap and hold the field above → Paste','error');
+  }
+}
 
 function switchSetupTab(tab){
   ['or','google'].forEach(t=>{
