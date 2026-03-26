@@ -138,8 +138,7 @@ textarea.inp{resize:vertical;min-height:88px;line-height:1.6}
       <p id="googleKeyStatus" style="font-size:11px;color:rgba(34,197,94,.7);margin-bottom:14px"></p>
       <label style="font-size:11px;font-weight:700;color:rgba(255,255,255,.4);letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:7px">Gemini Model</label>
       <select class="inp" id="googleModel" style="margin-bottom:6px">
-        <option value="gemini-2.5-pro-preview-03-25">Gemini 2.5 Pro ⭐ (Best)</option>
-        <option value="gemini-2.0-flash">Gemini 2.0 Flash (Fast)</option>
+        <option value="gemini-2.0-flash">Gemini 2.0 Flash ⭐ (Best Free)</option>
         <option value="gemini-2.0-flash-lite">Gemini 2.0 Flash Lite (Fastest)</option>
         <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
         <option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
@@ -575,7 +574,7 @@ function getModel(){return localStorage.getItem('itc_m')||MODELS_FALLBACK[0].v}
 function setModel(v){localStorage.setItem('itc_m',v)}
 function getGoogleKey(){return localStorage.getItem('itc_gk')||''}
 function setGoogleKey(v){localStorage.setItem('itc_gk',v)}
-function getGoogleModel(){return localStorage.getItem('itc_gm')||'gemini-2.5-pro-preview-03-25'}
+function getGoogleModel(){return localStorage.getItem('itc_gm')||'gemini-2.0-flash'}
 function setGoogleModel(v){localStorage.setItem('itc_gm',v)}
 function getProvider(){return localStorage.getItem('itc_prov')||'or'}
 function setProvider(v){localStorage.setItem('itc_prov',v)}
@@ -710,7 +709,7 @@ function populateModelDropdown(){
   if(!ms)return;
   if(getProvider()==='google'){
     ms.innerHTML='';
-    [{v:'gemini-2.5-pro-preview-03-25',l:'Gemini 2.5 Pro ⭐'},{v:'gemini-2.0-flash',l:'Gemini 2.0 Flash'},{v:'gemini-2.0-flash-lite',l:'Gemini 2.0 Flash Lite'},{v:'gemini-1.5-flash',l:'Gemini 1.5 Flash'},{v:'gemini-1.5-pro',l:'Gemini 1.5 Pro'}].forEach(m=>{
+    [{v:'gemini-2.0-flash',l:'Gemini 2.0 Flash ⭐ (Best Free)'},{v:'gemini-2.0-flash-lite',l:'Gemini 2.0 Flash Lite (Fastest)'},{v:'gemini-1.5-flash',l:'Gemini 1.5 Flash'},{v:'gemini-1.5-pro',l:'Gemini 1.5 Pro'}].forEach(m=>{
       const o=document.createElement('option');o.value=m.v;o.textContent=m.l;
       if(m.v===getGoogleModel())o.selected=true;
       ms.appendChild(o);
