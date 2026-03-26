@@ -410,6 +410,10 @@ textarea.inp{resize:vertical;min-height:88px;line-height:1.6}
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
                   Copy All
                 </button>
+                <button onclick="resetForm()" class="btn-sm" title="Clear and start a new ticket" style="display:flex;align-items:center;gap:5px;flex-shrink:0;background:rgba(99,102,241,.12);border-color:rgba(99,102,241,.28);color:#a5b4fc">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  New Ticket
+                </button>
               </div>
               <!-- Tabs -->
               <div style="padding:10px 16px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;gap:4px;flex-wrap:wrap;flex-shrink:0;background:rgba(7,13,26,.4)">
@@ -965,6 +969,17 @@ function addToQueue(){
   renderQueue();
   updateQueueCount();
   toast(`Added to ${status==='hold'?'On Hold':status.charAt(0).toUpperCase()+status.slice(1)} queue`,'success');
+  resetForm();
+}
+
+function resetForm(){
+  document.getElementById('tUser').value='';
+  document.getElementById('tIssue').value='';
+  document.getElementById('tTried').value='';
+  STATE.result=null;STATE.lastUser='';STATE.lastIssue='';
+  show('outEmpty',true);show('outPanel',false);show('outLoading',false);show('outError',false);
+  document.getElementById('addQueueWrap').style.display='none';
+  document.getElementById('tUser').focus();
 }
 
 function moveCard(id,from,to){
