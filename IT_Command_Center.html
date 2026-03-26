@@ -82,6 +82,70 @@ textarea.inp{resize:vertical;min-height:88px;line-height:1.6}
 .qcol-drop{background:rgba(59,130,246,.08);border-radius:10px;outline:2px dashed rgba(59,130,246,.4);outline-offset:2px}
 .qcard{cursor:grab}
 .qcard:active{cursor:grabbing}
+
+/* ── MOBILE NAV BAR ── */
+#mobileNav{display:none;position:fixed;bottom:0;left:0;right:0;z-index:50;background:rgba(7,13,26,.96);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:1px solid rgba(255,255,255,.08);padding:6px 4px calc(6px + env(safe-area-inset-bottom));gap:0}
+.mnav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:7px 4px;border-radius:10px;border:none;background:transparent;color:rgba(255,255,255,.35);cursor:pointer;font-size:9.5px;font-weight:600;transition:all .15s;position:relative}
+.mnav-btn svg{width:20px;height:20px}
+.mnav-btn.on{color:#93c5fd}
+.mnav-btn.on svg{stroke:#93c5fd}
+.mnav-btn .mbadge{position:absolute;top:4px;right:calc(50% - 14px);background:#3b82f6;color:#fff;font-size:9px;font-weight:800;border-radius:100px;padding:0 4px;min-width:14px;height:14px;display:flex;align-items:center;justify-content:center;line-height:1}
+
+/* ── MOBILE OUTPUT TOGGLE ── */
+#mobileOutToggle{display:none}
+
+/* ── RESPONSIVE BREAKPOINTS ── */
+@media(max-width:768px){
+  html,body{overflow:auto}
+  #mainApp{flex-direction:column;height:auto;min-height:100dvh}
+  /* Header */
+  header{padding:0 12px!important;height:46px!important}
+  .sb-logo-text,.sb{display:none!important}
+  #mainApp>div{flex-direction:column}
+  /* Body area */
+  main{flex:1;overflow:visible!important}
+  /* Bottom nav */
+  #mobileNav{display:flex}
+  /* Padding for bottom nav */
+  #mainApp{padding-bottom:70px}
+  /* Stats grid → 2 cols */
+  #statsRow{grid-template-columns:repeat(2,1fr)!important}
+  /* Dashboard padding */
+  #view-dashboard{padding:16px!important}
+  /* Ticket view: stack form + output */
+  #view-ticket{overflow-y:auto!important}
+  #view-ticket>div{grid-template-columns:1fr!important;height:auto!important;overflow:visible!important}
+  #view-ticket>div>div:first-child{border-right:none!important;border-bottom:1px solid rgba(255,255,255,.06);overflow:visible!important}
+  #view-ticket>div>div:last-child{overflow:visible!important;min-height:300px}
+  /* Mobile output toggle button */
+  #mobileOutToggle{display:flex;width:100%;align-items:center;justify-content:center;gap:7px;padding:10px;background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.22);border-radius:10px;color:#93c5fd;font-size:13px;font-weight:700;cursor:pointer;margin-top:4px}
+  /* Queue board: horizontal scroll */
+  #view-queue{padding:12px!important;overflow:auto!important}
+  #queueBoard{flex-direction:row!important;overflow-x:auto!important;gap:10px!important;padding-bottom:8px}
+  #queueBoard>div{min-width:240px!important;flex-shrink:0}
+  /* Scripts & KB */
+  #view-scripts,#view-kb,#view-history,#view-reports{padding:14px!important}
+  #scriptGrid{grid-template-columns:1fr!important}
+  /* Reports stats strip */
+  #rptStats{grid-template-columns:repeat(2,1fr)!important}
+  /* Modal full screen on mobile */
+  .modal-overlay{padding:0!important;align-items:flex-end!important}
+  .modal-box{border-radius:18px 18px 0 0!important;max-width:100%!important;width:100%!important;max-height:90dvh!important;overflow-y:auto}
+  /* Form header buttons wrap */
+  #view-ticket .form-header-actions{flex-wrap:wrap}
+  /* Bigger touch targets */
+  .btn-sm{padding:8px 14px!important}
+  .tab-btn{padding:8px 12px!important;font-size:12px!important}
+  /* Input font size prevent iOS zoom */
+  .inp,.inp textarea,.inp select{font-size:16px!important}
+  select.inp{font-size:16px!important}
+  /* Output panel header wrap */
+  #outPanel>div:first-child{flex-wrap:wrap;gap:8px}
+}
+@media(max-width:400px){
+  .mnav-btn span{display:none}
+  .mnav-btn{padding:10px 4px}
+}
 </style>
 </head>
 <body>
@@ -377,6 +441,11 @@ textarea.inp{resize:vertical;min-height:88px;line-height:1.6}
                 Clear
               </button>
             </div>
+            <!-- Mobile only: scroll to output after generate -->
+            <button id="mobileOutToggle" onclick="document.getElementById('outPanel').scrollIntoView({behavior:'smooth'})" style="display:none">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+              View Output ↓
+            </button>
             <!-- Add to queue (shows after generation) -->
             <div id="addQueueWrap" style="display:none;gap:8px;flex-direction:column">
               <div style="height:1px;background:rgba(255,255,255,.07)"></div>
@@ -478,7 +547,7 @@ textarea.inp{resize:vertical;min-height:88px;line-height:1.6}
             <p style="font-size:12px;color:rgba(255,255,255,.35);margin-top:2px">Mirrors your Chrome tab groups — New · Active · On Hold · TBX</p>
           </div>
         </div>
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;height:calc(100% - 64px)">
+        <div id="queueBoard" style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;height:calc(100% - 64px)">
           <div style="display:flex;flex-direction:column;gap:8px">
             <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:9px;background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.2)">
               <div class="pulsed blue"></div>
@@ -703,6 +772,35 @@ textarea.inp{resize:vertical;min-height:88px;line-height:1.6}
   </div>
 </div>
 
+<!-- MOBILE BOTTOM NAV -->
+<nav id="mobileNav">
+  <button class="mnav-btn on" id="mnav-dashboard" onclick="setView('dashboard')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+    <span>Home</span>
+  </button>
+  <button class="mnav-btn" id="mnav-ticket" onclick="setView('ticket')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg>
+    <span>New</span>
+  </button>
+  <button class="mnav-btn" id="mnav-queue" onclick="setView('queue')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="5" height="18"/><rect x="10" y="3" width="5" height="18"/><rect x="17" y="3" width="5" height="18"/></svg>
+    <span>Queue</span>
+    <span id="mnavQueueBadge" class="mbadge" style="display:none"></span>
+  </button>
+  <button class="mnav-btn" id="mnav-scripts" onclick="setView('scripts')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+    <span>Scripts</span>
+  </button>
+  <button class="mnav-btn" id="mnav-kb" onclick="setView('kb')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+    <span>KB</span>
+  </button>
+  <button class="mnav-btn" id="mnav-history" onclick="setView('history')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+    <span>History</span>
+  </button>
+</nav>
+
 <!-- TOAST -->
 <div id="toast" style="position:fixed;bottom:22px;right:22px;z-index:200;display:flex;flex-direction:column;gap:8px;pointer-events:none"></div>
 
@@ -852,8 +950,9 @@ function setView(v){
     if(el){el.style.display=id===v?'flex':'none';if(id===v)el.classList.add('view-enter');}
   });
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('on'));
-  const ni=document.getElementById('nav-'+v);
-  if(ni)ni.classList.add('on');
+  document.querySelectorAll('.mnav-btn').forEach(n=>n.classList.remove('on'));
+  const ni=document.getElementById('nav-'+v);if(ni)ni.classList.add('on');
+  const mi=document.getElementById('mnav-'+v);if(mi)mi.classList.add('on');
   if(v==='dashboard')renderDashboard();
   if(v==='queue')renderQueue();
   if(v==='history')renderHistory();
@@ -1065,6 +1164,7 @@ Synthesize the BEST knowledge from Microsoft docs, r/sysadmin, Spiceworks, Serve
     autoSaveToKb(issue,parsed);
     renderOutput(user,issue,parsed);
     document.getElementById('addQueueWrap').style.display='flex';
+    const mot=document.getElementById('mobileOutToggle');if(mot)mot.style.display='flex';
 
   }catch(err){
     show('outLoading',false);show('outError',true);
@@ -1145,6 +1245,7 @@ function resetForm(){
   STATE.result=null;STATE.lastUser='';STATE.lastIssue='';
   show('outEmpty',true);show('outPanel',false);show('outLoading',false);show('outError',false);
   document.getElementById('addQueueWrap').style.display='none';
+  const mot=document.getElementById('mobileOutToggle');if(mot)mot.style.display='none';
   document.getElementById('tUser').focus();
 }
 
@@ -1241,8 +1342,10 @@ function updateQueueCount(){
   const el=document.getElementById('navQueueCount');
   if(el)el.textContent=total||'';
   // Also update the in-form queue jump button count
-  const fqc=document.getElementById('formQueueCount');
-  if(fqc)fqc.textContent=total||'0';
+  const fqc=document.getElementById('formQueueCount');if(fqc)fqc.textContent=total||'0';
+  // Mobile nav queue badge
+  const mb=document.getElementById('mnavQueueBadge');
+  if(mb){mb.textContent=total||'';mb.style.display=total?'flex':'none';}
   const sa=document.getElementById('statActive');
   const sh=document.getElementById('statHold');
   const st=document.getElementById('statTbx');
