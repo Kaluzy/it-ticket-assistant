@@ -155,21 +155,45 @@ textarea.inp{resize:vertical;min-height:88px;line-height:1.6}
 <div class="bg-orb2"></div>
 
 <!-- ═══ SETUP MODAL ═══ -->
-<div id="setupModal" class="modal-overlay">
-  <div class="modal-box" style="max-width:500px">
-    <div style="text-align:center;margin-bottom:28px">
-      <div style="width:56px;height:56px;background:linear-gradient(135deg,#2563eb,#0891b2);border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:22px;font-weight:900;color:#fff;box-shadow:0 0 30px rgba(37,99,235,.5)">IT</div>
-      <h1 style="font-size:22px;font-weight:800;margin-bottom:6px" class="grad-text">IT Command Center</h1>
-      <p style="font-size:13px;color:rgba(255,255,255,.45);line-height:1.6">Maxim Healthcare Services · Powered by AI<br/>Enter your OpenRouter API key to get started.</p>
+<div id="setupModal" class="modal-overlay" style="align-items:center!important;padding:16px!important">
+  <div class="modal-box" style="max-width:480px;border-radius:18px!important;max-height:92dvh;overflow-y:auto">
+    <div style="text-align:center;margin-bottom:22px">
+      <div style="width:52px;height:52px;background:linear-gradient(135deg,#2563eb,#0891b2);border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:20px;font-weight:900;color:#fff;box-shadow:0 0 28px rgba(37,99,235,.5)">IT</div>
+      <h1 style="font-size:20px;font-weight:800;margin-bottom:5px" class="grad-text">IT Command Center</h1>
+      <p style="font-size:12px;color:rgba(255,255,255,.4);line-height:1.5">Maxim Healthcare Services · Powered by AI</p>
     </div>
-    <div style="margin-bottom:12px">
+
+    <!-- Provider toggle -->
+    <div style="display:flex;gap:6px;margin-bottom:18px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:4px">
+      <button id="setupTab-or" onclick="switchSetupTab('or')" style="flex:1;padding:9px;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;border:none;background:rgba(59,130,246,.2);color:#93c5fd;transition:all .15s">OpenRouter</button>
+      <button id="setupTab-google" onclick="switchSetupTab('google')" style="flex:1;padding:9px;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;border:none;background:transparent;color:rgba(255,255,255,.4);transition:all .15s">Google Gemini ✨</button>
+    </div>
+
+    <!-- OpenRouter panel -->
+    <div id="setupPanel-or">
       <label style="font-size:11px;font-weight:700;color:rgba(255,255,255,.4);letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:7px">OpenRouter API Key</label>
-      <input class="inp" type="password" id="setupKey" placeholder="sk-or-v1-..." style="font-family:monospace"/>
+      <div style="position:relative;margin-bottom:10px">
+        <input class="inp" type="text" id="setupKey" placeholder="sk-or-v1-..." autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" style="font-family:monospace;padding-right:44px;font-size:13px"/>
+        <button onclick="toggleSetupVis('setupKey',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:rgba(255,255,255,.3);cursor:pointer;font-size:11px;padding:4px">SHOW</button>
+      </div>
+      <p style="font-size:11px;color:rgba(255,255,255,.25);margin-bottom:16px;line-height:1.6">Free key at <span style="color:#60a5fa">openrouter.ai</span> — stored on this device only</p>
+      <button class="btn-glow" style="width:100%;padding:13px;border-radius:10px;font-size:14px;font-weight:700;color:#fff" onclick="setupSave('or')">Connect &amp; Launch →</button>
     </div>
-    <p style="font-size:11px;color:rgba(255,255,255,.28);margin-bottom:20px;line-height:1.6">Your key is stored locally on this device only — never transmitted to any server except OpenRouter.<br/><span style="color:rgba(59,130,246,.7)">Get a free key at openrouter.ai</span></p>
-    <button class="btn-glow" style="width:100%;padding:12px;border-radius:10px;font-size:14px;font-weight:700;color:#fff" onclick="setupSave()">
-      Connect &amp; Launch →
-    </button>
+
+    <!-- Google panel -->
+    <div id="setupPanel-google" style="display:none">
+      <div style="padding:10px 13px;background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.2);border-radius:9px;margin-bottom:14px;font-size:11.5px;color:rgba(255,255,255,.5);line-height:1.6">
+        Free at <span style="color:#60a5fa">aistudio.google.com</span> → Get API Key
+      </div>
+      <label style="font-size:11px;font-weight:700;color:rgba(255,255,255,.4);letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:7px">Google AI Studio Key</label>
+      <div style="position:relative;margin-bottom:10px">
+        <input class="inp" type="text" id="setupGKey" placeholder="AIza..." autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false" style="font-family:monospace;padding-right:44px;font-size:13px"/>
+        <button onclick="toggleSetupVis('setupGKey',this)" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:rgba(255,255,255,.3);cursor:pointer;font-size:11px;padding:4px">SHOW</button>
+      </div>
+      <p style="font-size:11px;color:rgba(255,255,255,.25);margin-bottom:16px">No credit card · Gemini 2.0 Flash is completely free</p>
+      <button class="btn-glow" style="width:100%;padding:13px;border-radius:10px;font-size:14px;font-weight:700;color:#fff" onclick="setupSave('google')">Connect &amp; Launch →</button>
+    </div>
+
     <p style="text-align:center;margin-top:12px;font-size:11px;color:rgba(255,255,255,.2)">You can update this anytime in Settings</p>
   </div>
 </div>
@@ -894,7 +918,8 @@ function uuid(){return Date.now().toString(36)+Math.random().toString(36).slice(
 //  INIT
 // ══════════════════════════════════════════
 window.addEventListener('DOMContentLoaded',()=>{
-  if(getKey()){
+  const hasKey=getKey()||(getProvider()==='google'&&getGoogleKey());
+  if(hasKey){
     document.getElementById('setupModal').style.display='none';
     boot();
   }else{
@@ -903,10 +928,32 @@ window.addEventListener('DOMContentLoaded',()=>{
   document.getElementById('dashDate').textContent=new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
 });
 
-function setupSave(){
-  const k=document.getElementById('setupKey').value.trim();
-  if(!k){toast('Enter your API key','error');return;}
-  setKey(k);
+function switchSetupTab(tab){
+  ['or','google'].forEach(t=>{
+    document.getElementById('setupTab-'+t).style.background=t===tab?'rgba(59,130,246,.2)':'transparent';
+    document.getElementById('setupTab-'+t).style.color=t===tab?'#93c5fd':'rgba(255,255,255,.4)';
+    document.getElementById('setupPanel-'+t).style.display=t===tab?'block':'none';
+  });
+}
+function toggleSetupVis(fieldId,btn){
+  const f=document.getElementById(fieldId);
+  const showing=f.type==='text'&&btn.textContent==='HIDE';
+  f.type=showing?'text':'text'; // always text for paste, just mask visually
+  if(showing){f.style.webkitTextSecurity='disc';f.style.fontFamily='text-security-disc,monospace';btn.textContent='SHOW';}
+  else{f.style.webkitTextSecurity='none';f.style.fontFamily='monospace';btn.textContent='HIDE';}
+}
+function setupSave(provider){
+  const prov=provider||'or';
+  let k='';
+  if(prov==='google'){
+    k=document.getElementById('setupGKey').value.trim();
+    if(!k){toast('Enter your Google AI Studio key','error');return;}
+    setGoogleKey(k);setProvider('google');
+  }else{
+    k=document.getElementById('setupKey').value.trim();
+    if(!k){toast('Enter your OpenRouter API key','error');return;}
+    setKey(k);setProvider('or');
+  }
   document.getElementById('setupModal').style.display='none';
   boot();
 }
