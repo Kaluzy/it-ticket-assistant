@@ -241,6 +241,10 @@ textarea.inp{resize:vertical;min-height:88px;line-height:1.6}
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
         <span class="nl">Reports</span>
       </div>
+      <div class="nav-item" id="nav-scripts" onclick="setView('scripts')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+        <span class="nl">Scripts Library</span>
+      </div>
       <div style="flex:1"></div>
       <div style="padding:8px 6px;border-top:1px solid rgba(255,255,255,.05);margin-top:6px">
         <div style="font-size:10px;color:rgba(255,255,255,.2);font-weight:500" class="nl">Ctrl+Enter to Generate</div>
@@ -563,6 +567,66 @@ textarea.inp{resize:vertical;min-height:88px;line-height:1.6}
         </div>
       </div>
 
+      <!-- SCRIPTS LIBRARY VIEW -->
+      <div id="view-scripts" style="display:none;flex:1;overflow-y:auto;padding:24px;flex-direction:column;gap:18px">
+        <!-- Header -->
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px">
+          <div>
+            <h2 style="font-size:17px;font-weight:800">Scripts Library</h2>
+            <p style="font-size:12px;color:rgba(255,255,255,.35);margin-top:2px">PowerShell &amp; CMD — one click to copy</p>
+          </div>
+          <button onclick="openAddScript()" style="display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:9px;background:rgba(59,130,246,.14);border:1px solid rgba(59,130,246,.3);color:#93c5fd;font-size:12px;font-weight:700;cursor:pointer">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Save Custom Script
+          </button>
+        </div>
+        <!-- Search + filter row -->
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+          <input id="scriptSearch" class="inp" placeholder="Search scripts…" oninput="renderScripts()" style="flex:1;min-width:200px;max-width:320px;padding:8px 13px;font-size:12.5px"/>
+          <div id="scriptCats" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+        </div>
+        <!-- Script cards grid -->
+        <div id="scriptGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px"></div>
+      </div>
+
+      <!-- ADD CUSTOM SCRIPT MODAL -->
+      <div id="addScriptModal" class="modal-overlay" style="display:none">
+        <div class="modal-box" style="max-width:500px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+            <h3 style="font-size:15px;font-weight:800">Save Custom Script</h3>
+            <button onclick="closeAddScript()" style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:4px 10px;color:rgba(255,255,255,.5);cursor:pointer;font-size:12px">✕</button>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <div>
+              <label style="font-size:11px;font-weight:700;color:rgba(255,255,255,.35);letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:6px">Title</label>
+              <input class="inp" id="csTitle" placeholder="e.g. Flush DNS + Reset Winsock"/>
+            </div>
+            <div style="display:flex;gap:10px">
+              <div style="flex:1">
+                <label style="font-size:11px;font-weight:700;color:rgba(255,255,255,.35);letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:6px">Category</label>
+                <input class="inp" id="csCategory" placeholder="e.g. Network"/>
+              </div>
+              <div style="flex:1">
+                <label style="font-size:11px;font-weight:700;color:rgba(255,255,255,.35);letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:6px">Shell</label>
+                <select class="inp" id="csShell">
+                  <option value="ps">PowerShell</option>
+                  <option value="cmd">CMD</option>
+                </select>
+              </div>
+            </div>
+            <div>
+              <label style="font-size:11px;font-weight:700;color:rgba(255,255,255,.35);letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:6px">Description</label>
+              <input class="inp" id="csDesc" placeholder="What does this script do?"/>
+            </div>
+            <div>
+              <label style="font-size:11px;font-weight:700;color:rgba(255,255,255,.35);letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:6px">Script Code</label>
+              <textarea class="inp" id="csCode" placeholder="Paste your script here…" style="min-height:120px;font-family:monospace;font-size:12px"></textarea>
+            </div>
+            <button class="btn-glow" onclick="saveCustomScript()" style="width:100%;padding:11px;border-radius:9px;font-size:13px;font-weight:700;color:#fff">Save Script</button>
+          </div>
+        </div>
+      </div>
+
     </main>
   </div>
 </div>
@@ -710,7 +774,7 @@ function boot(){
 // ══════════════════════════════════════════
 function setView(v){
   STATE.view=v;
-  ['dashboard','ticket','queue','history','reports'].forEach(id=>{
+  ['dashboard','ticket','queue','history','reports','scripts'].forEach(id=>{
     const el=document.getElementById('view-'+id);
     if(el){el.style.display=id===v?'flex':'none';if(id===v)el.classList.add('view-enter');}
   });
@@ -720,6 +784,7 @@ function setView(v){
   if(v==='dashboard')renderDashboard();
   if(v==='queue')renderQueue();
   if(v==='history')renderHistory();
+  if(v==='scripts')renderScripts();
 }
 
 // Fix: dashboard uses flex column
@@ -1605,6 +1670,306 @@ function formatInline(text){
     .replace(/\*\*(.+?)\*\*/g,'<strong style="color:#e2e8f0;font-weight:700">$1</strong>')
     .replace(/\*(.+?)\*/g,'<em style="color:rgba(255,255,255,.8)">$1</em>')
     .replace(/`(.+?)`/g,'<code style="font-family:monospace;font-size:11.5px;background:rgba(255,255,255,.08);padding:1px 5px;border-radius:4px;color:#a5b4fc">$1</code>');
+}
+
+// Keyboard shortcut
+document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){if(STATE.view==='ticket')generate();}});
+
+// ══════════════════════════════════════════
+//  SCRIPTS LIBRARY
+// ══════════════════════════════════════════
+const BUILTIN_SCRIPTS=[
+  // ── Windows / OS ──
+  {id:'w1',cat:'Windows',shell:'ps',title:'System File Checker (SFC)',desc:'Scans and repairs corrupted Windows system files.',code:`# Run as Administrator
+sfc /scannow`},
+  {id:'w2',cat:'Windows',shell:'cmd',title:'DISM Repair Windows Image',desc:'Repairs the Windows component store. Run after SFC if errors persist.',code:`:: Run as Administrator
+DISM /Online /Cleanup-Image /RestoreHealth`},
+  {id:'w3',cat:'Windows',shell:'ps',title:'Windows Update Reset',desc:'Clears Windows Update cache and resets the service. Fixes stuck updates.',code:`# Run as Administrator
+Stop-Service wuauserv,bits,cryptsvc -Force
+Remove-Item "$env:SystemRoot\\SoftwareDistribution" -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item "$env:SystemRoot\\System32\\catroot2" -Recurse -Force -ErrorAction SilentlyContinue
+Start-Service cryptsvc,bits,wuauserv
+Write-Host "Windows Update reset complete." -ForegroundColor Green`},
+  {id:'w4',cat:'Windows',shell:'ps',title:'Check Windows Activation Status',desc:'Shows current Windows activation and license type.',code:`slmgr /xpr
+Get-WmiObject SoftwareLicensingProduct | Where-Object {$_.PartialProductKey} | Select Name,LicenseStatus`},
+  {id:'w5',cat:'Windows',shell:'ps',title:'Repair Windows Store Apps',desc:'Re-registers all built-in Windows apps (fixes Teams, Store, etc.).',code:`# Run as Administrator
+Get-AppXPackage -AllUsers | ForEach-Object {
+  Add-AppxPackage -DisableDevelopmentMode -Register "$($_.InstallLocation)\AppXManifest.xml" -ErrorAction SilentlyContinue
+}
+Write-Host "App re-registration complete." -ForegroundColor Green`},
+
+  // ── Drivers ──
+  {id:'d1',cat:'Drivers',shell:'ps',title:'List All Installed Drivers',desc:'Exports a full list of installed drivers with version and date.',code:`Get-WmiObject Win32_PnPSignedDriver |
+  Select DeviceName,DriverVersion,DriverDate,Manufacturer |
+  Sort DeviceName | Format-Table -AutoSize`},
+  {id:'d2',cat:'Drivers',shell:'ps',title:'Check for Driver Issues (Problem Devices)',desc:'Lists devices with driver errors or warnings in Device Manager.',code:`Get-WmiObject Win32_PnPEntity |
+  Where-Object {$_.ConfigManagerErrorCode -ne 0} |
+  Select Name,ConfigManagerErrorCode,DeviceID`},
+  {id:'d3',cat:'Drivers',shell:'cmd',title:'Export Full Driver Backup',desc:'Backs up all third-party drivers to a folder for reimaging.',code:`:: Run as Administrator
+pnputil /export-driver * C:\DriverBackup
+echo Driver backup saved to C:\DriverBackup`},
+  {id:'d4',cat:'Drivers',shell:'ps',title:'Lenovo System Update via WinGet',desc:'Installs/updates Lenovo System Update and Vantage via WinGet.',code:`winget install Lenovo.SystemUpdate --silent --accept-package-agreements --accept-source-agreements
+winget upgrade --all --silent --accept-package-agreements`},
+
+  // ── Network ──
+  {id:'n1',cat:'Network',shell:'cmd',title:'Full Network Reset',desc:'Flushes DNS, resets Winsock, TCP/IP stack. Fixes most connectivity issues.',code:`:: Run as Administrator
+ipconfig /flushdns
+ipconfig /release
+ipconfig /renew
+netsh winsock reset
+netsh int ip reset
+netsh int tcp reset
+echo Network reset complete — RESTART REQUIRED`},
+  {id:'n2',cat:'Network',shell:'ps',title:'Network Diagnostics Snapshot',desc:'Dumps IP config, DNS, routes, and open connections to screen.',code:`Write-Host "=== IP CONFIG ===" -ForegroundColor Cyan
+ipconfig /all
+Write-Host "`n=== DNS CACHE ===" -ForegroundColor Cyan
+Get-DnsClientCache | Format-Table -AutoSize
+Write-Host "`n=== ROUTING TABLE ===" -ForegroundColor Cyan
+route print
+Write-Host "`n=== ACTIVE CONNECTIONS ===" -ForegroundColor Cyan
+netstat -an | Select-String "ESTABLISHED|LISTENING"`},
+  {id:'n3',cat:'Network',shell:'ps',title:'Test Network Connectivity',desc:'Pings key endpoints to check internet, DNS, and internal network.',code:`$targets = @("8.8.8.8","google.com","microsoft.com","portal.office.com")
+foreach ($t in $targets) {
+  $result = Test-Connection $t -Count 2 -Quiet
+  Write-Host "$t : $(if($result){'OK ✓'}else{'FAIL ✗'})" -ForegroundColor $(if($result){'Green'}else{'Red'})
+}`},
+  {id:'n4',cat:'Network',shell:'ps',title:'Disable/Enable Network Adapter',desc:'Restarts the primary network adapter to resolve connection glitches.',code:`# Run as Administrator
+$adapter = Get-NetAdapter | Where-Object {$_.Status -eq "Up"} | Select-Object -First 1
+Disable-NetAdapter -Name $adapter.Name -Confirm:$false
+Start-Sleep -Seconds 3
+Enable-NetAdapter -Name $adapter.Name -Confirm:$false
+Write-Host "Adapter '$($adapter.Name)' restarted." -ForegroundColor Green`},
+  {id:'n5',cat:'Network',shell:'ps',title:'Set Static DNS (Google / Cloudflare)',desc:'Sets DNS to Google (8.8.8.8) and Cloudflare (1.1.1.1) on all adapters.',code:`# Run as Administrator
+$adapters = Get-NetAdapter | Where-Object {$_.Status -eq "Up"}
+foreach ($a in $adapters) {
+  Set-DnsClientServerAddress -InterfaceIndex $a.ifIndex -ServerAddresses ("8.8.8.8","1.1.1.1")
+}
+Write-Host "DNS updated on all active adapters." -ForegroundColor Green`},
+
+  // ── Printers ──
+  {id:'p1',cat:'Printers',shell:'cmd',title:'Reset Print Spooler',desc:'Stops spooler, clears stuck jobs, restarts. Fixes most printing issues.',code:`:: Run as Administrator
+net stop spooler
+del /Q /F /S "%systemroot%\System32\spool\PRINTERS\*.*"
+net start spooler
+echo Print spooler cleared and restarted.`},
+  {id:'p2',cat:'Printers',shell:'ps',title:'List All Installed Printers',desc:'Shows all printers, their status, port, and driver.',code:`Get-Printer | Select Name,DriverName,PortName,PrinterStatus | Format-Table -AutoSize`},
+  {id:'p3',cat:'Printers',shell:'ps',title:'Remove All Printers & Reinstall',desc:'Removes all non-system printers. Use before adding fresh via print server.',code:`# Run as Administrator
+Get-Printer | Where-Object {$_.Type -ne "Local"} | ForEach-Object {
+  Write-Host "Removing: $($_.Name)"
+  Remove-Printer -Name $_.Name -ErrorAction SilentlyContinue
+}
+Write-Host "All network printers removed." -ForegroundColor Yellow`},
+
+  // ── Office & Teams ──
+  {id:'o1',cat:'Office / Teams',shell:'cmd',title:'Clear Microsoft Teams Cache',desc:'Deletes all Teams cache files. Fixes login loops, missing messages, blank screens.',code:`:: Close Teams first
+taskkill /F /IM Teams.exe /T
+rd /s /q "%APPDATA%\Microsoft\Teams\Cache"
+rd /s /q "%APPDATA%\Microsoft\Teams\blob_storage"
+rd /s /q "%APPDATA%\Microsoft\Teams\databases"
+rd /s /q "%APPDATA%\Microsoft\Teams\GPUcache"
+rd /s /q "%APPDATA%\Microsoft\Teams\IndexedDB"
+rd /s /q "%APPDATA%\Microsoft\Teams\Local Storage"
+rd /s /q "%APPDATA%\Microsoft\Teams\tmp"
+echo Teams cache cleared — relaunch Teams`},
+  {id:'o2',cat:'Office / Teams',shell:'ps',title:'Repair Microsoft Office (Online)',desc:'Runs Online Repair for Office 365 / Microsoft 365 apps.',code:`# Run as Administrator
+$officeReg = Get-ChildItem "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall" |
+  Where-Object {$_.GetValue("DisplayName") -like "*Microsoft 365*" -or $_.GetValue("DisplayName") -like "*Office*"} |
+  Select-Object -First 1
+if ($officeReg) {
+  $uninstallStr = $officeReg.GetValue("UninstallString")
+  Write-Host "Found: $($officeReg.GetValue('DisplayName'))"
+  Start-Process "control.exe" "/name Microsoft.ProgramsAndFeatures"
+} else {
+  Write-Host "Office not found in registry. Check Apps & Features manually." -ForegroundColor Yellow
+}`},
+  {id:'o3',cat:'Office / Teams',shell:'ps',title:'Reset Outlook Profile',desc:'Removes corrupt Outlook profile (user must reconfigure). Last resort for Outlook issues.',code:`# Run as Administrator — user will lose saved Outlook settings
+$profilePath = "HKCU:\Software\Microsoft\Office\16.0\Outlook\Profiles"
+if (Test-Path $profilePath) {
+  Remove-Item $profilePath -Recurse -Force
+  Write-Host "Outlook profiles removed. Outlook will ask to create a new profile." -ForegroundColor Green
+} else {
+  Write-Host "No Outlook 2016/365 profiles found." -ForegroundColor Yellow
+}`},
+
+  // ── Intune / MDM ──
+  {id:'i1',cat:'Intune / MDM',shell:'ps',title:'Check Intune Enrollment Status',desc:'Shows AAD join status, MDM enrollment URL, and compliance state.',code:`dsregcmd /status | Select-String "AzureAdJoined|DomainJoined|MDMUrl|EnterpriseJoined|WorkplaceJoined"`},
+  {id:'i2',cat:'Intune / MDM',shell:'ps',title:'Force Intune Sync',desc:'Triggers an immediate Intune policy/app sync without waiting for scheduled check-in.',code:`# Run as Administrator
+$session = New-Object -ComObject Microsoft.CCM.DCM
+Invoke-Command {
+  $enrollmentPath = "HKLM:\SOFTWARE\Microsoft\Enrollments"
+  $enrollmentId = (Get-ChildItem $enrollmentPath | Where-Object {(Get-ItemProperty $_.PSPath).ProviderID -eq "MS DM Server"}).PSChildName
+  if ($enrollmentId) {
+    $syncUri = "ms-settings:workplace"
+    Write-Host "Enrollment ID: $enrollmentId"
+    Write-Host "Triggering sync via DeviceEnroller..."
+    Start-Process "ms-settings:workplace"
+  }
+}`},
+  {id:'i3',cat:'Intune / MDM',shell:'ps',title:'Re-enroll Device in Intune',desc:'Forces MDM re-enrollment. Use when device shows as non-compliant or unenrolled.',code:`# Run as Administrator — triggers re-enrollment
+$task = "\Microsoft\Windows\EnterpriseMgmt\*"
+Get-ScheduledTask -TaskPath $task | Start-ScheduledTask
+Write-Host "MDM enrollment tasks triggered. Check Intune portal in 15 min." -ForegroundColor Green`},
+  {id:'i4',cat:'Intune / MDM',shell:'cmd',title:'Check AAD Device Join',desc:'Displays device Azure AD join details and token status.',code:`dsregcmd /status`},
+
+  // ── User / Profile ──
+  {id:'u1',cat:'User / Profile',shell:'ps',title:'List Local User Accounts',desc:'Shows all local accounts, their status, and last logon time.',code:`Get-LocalUser | Select Name,Enabled,LastLogon,PasswordLastSet | Format-Table -AutoSize`},
+  {id:'u2',cat:'User / Profile',shell:'ps',title:'Force User Password Reset (Local)',desc:'Resets a local account password. Swap username and new password.',code:`# Run as Administrator
+$username = "USERNAME_HERE"
+$newPassword = ConvertTo-SecureString "NewPassword123!" -AsPlainText -Force
+Set-LocalUser -Name $username -Password $newPassword
+Write-Host "Password reset for $username" -ForegroundColor Green`},
+  {id:'u3',cat:'User / Profile',shell:'ps',title:'Clear Credential Manager',desc:'Removes stored Windows and web credentials. Fixes repeated sign-in prompts.',code:`# Remove all stored Windows credentials
+cmdkey /list | ForEach-Object {
+  if ($_ -match "Target: (.+)") {
+    cmdkey /delete:$($Matches[1])
+    Write-Host "Removed: $($Matches[1])"
+  }
+}
+Write-Host "Credential Manager cleared." -ForegroundColor Green`},
+
+  // ── Performance ──
+  {id:'perf1',cat:'Performance',shell:'ps',title:'System Health Snapshot',desc:'CPU, RAM, disk usage and top processes at a glance.',code:`Write-Host "=== CPU & RAM ===" -ForegroundColor Cyan
+Get-WmiObject Win32_OperatingSystem | Select @{N="FreeRAM_GB";E={[math]::Round($_.FreePhysicalMemory/1MB,2)}},@{N="TotalRAM_GB";E={[math]::Round($_.TotalVisibleMemorySize/1MB,2)}}
+Write-Host "`n=== Top 10 CPU Processes ===" -ForegroundColor Cyan
+Get-Process | Sort CPU -Descending | Select -First 10 Name,CPU,@{N="RAM_MB";E={[math]::Round($_.WorkingSet64/1MB,1)}} | Format-Table -AutoSize
+Write-Host "`n=== Disk Usage ===" -ForegroundColor Cyan
+Get-PSDrive -PSProvider FileSystem | Select Name,@{N="Used_GB";E={[math]::Round($_.Used/1GB,1)}},@{N="Free_GB";E={[math]::Round($_.Free/1GB,1)}} | Format-Table -AutoSize`},
+  {id:'perf2',cat:'Performance',shell:'cmd',title:'Disk Cleanup (Silent)',desc:'Runs Disk Cleanup on C: silently, removes temp files, recycle bin, etc.',code:`:: Run as Administrator
+cleanmgr /sagerun:1
+del /q /f /s %TEMP%\*
+del /q /f /s C:\Windows\Temp\*
+echo Temp files cleared.`},
+  {id:'perf3',cat:'Performance',shell:'ps',title:'Disable Startup Apps (List)',desc:'Lists all startup programs so you can identify slow-boot culprits.',code:`Get-CimInstance Win32_StartupCommand | Select Name,Command,Location,User | Format-Table -AutoSize`},
+  {id:'perf4',cat:'Performance',shell:'ps',title:'Check & Fix Disk Errors',desc:'Runs CHKDSK on C: at next reboot to fix file system errors.',code:`# Run as Administrator
+chkdsk C: /f /r /x
+Write-Host "CHKDSK scheduled for next reboot." -ForegroundColor Yellow`}
+];
+
+const CAT_COLORS={
+  'Windows':'bdg-blue','Drivers':'bdg-purple','Network':'bdg-teal',
+  'Printers':'bdg-amber','Office / Teams':'bdg-green','Intune / MDM':'bdg-red',
+  'User / Profile':'bdg-gray','Performance':'bdg-amber','Custom':'bdg-purple'
+};
+
+let SCRIPT_CAT_FILTER='All';
+
+function getCustomScripts(){
+  try{return JSON.parse(localStorage.getItem('itc_custom_scripts')||'[]');}catch{return[];}
+}
+function saveCustomScripts(arr){localStorage.setItem('itc_custom_scripts',JSON.stringify(arr));}
+
+function renderScripts(){
+  const query=(document.getElementById('scriptSearch')||{value:''}).value.toLowerCase();
+  const allScripts=[...BUILTIN_SCRIPTS,...getCustomScripts()];
+  const cats=['All',...new Set(allScripts.map(s=>s.cat))];
+
+  // Build category filter chips
+  const catEl=document.getElementById('scriptCats');
+  if(catEl){
+    catEl.innerHTML='';
+    cats.forEach(c=>{
+      const btn=document.createElement('div');
+      btn.className='chip'+(SCRIPT_CAT_FILTER===c?' on':'');
+      btn.textContent=c;
+      btn.onclick=()=>{SCRIPT_CAT_FILTER=c;renderScripts();};
+      catEl.appendChild(btn);
+    });
+  }
+
+  const filtered=allScripts.filter(s=>{
+    const matchCat=SCRIPT_CAT_FILTER==='All'||s.cat===SCRIPT_CAT_FILTER;
+    const matchQ=!query||s.title.toLowerCase().includes(query)||s.desc.toLowerCase().includes(query)||s.cat.toLowerCase().includes(query)||s.code.toLowerCase().includes(query);
+    return matchCat&&matchQ;
+  });
+
+  const grid=document.getElementById('scriptGrid');
+  if(!grid)return;
+  if(!filtered.length){
+    grid.innerHTML='<div style="color:rgba(255,255,255,.25);font-size:13px;padding:20px 0;grid-column:1/-1">No scripts match your search.</div>';
+    return;
+  }
+
+  grid.innerHTML=filtered.map(s=>{
+    const isCustom=!BUILTIN_SCRIPTS.find(b=>b.id===s.id);
+    const shellClr=s.shell==='ps'?'color:#c4b5fd;background:rgba(139,92,246,.12);border:1px solid rgba(139,92,246,.25)':'color:#fcd34d;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.2)';
+    const shellLabel=s.shell==='ps'?'PowerShell':'CMD';
+    const catClr=CAT_COLORS[s.cat]||'bdg-gray';
+    const escapedCode=s.code.replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/`/g,'&#96;');
+    return `<div class="glass" style="border-radius:13px;padding:16px;display:flex;flex-direction:column;gap:11px;position:relative">
+  ${isCustom?`<button onclick="deleteCustomScript('${s.id}')" title="Delete" style="position:absolute;top:10px;right:10px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);border-radius:6px;padding:3px 7px;color:#fca5a5;cursor:pointer;font-size:10px">✕</button>`:''}
+  <div>
+    <div style="display:flex;align-items:center;gap:7px;margin-bottom:5px;flex-wrap:wrap">
+      <span class="bdg ${catClr}" style="font-size:9px">${esc(s.cat)}</span>
+      <span style="font-size:9.5px;font-weight:700;padding:2px 8px;border-radius:100px;${shellClr}">${shellLabel}</span>
+      ${isCustom?'<span class="bdg bdg-purple" style="font-size:9px">Custom</span>':''}
+    </div>
+    <div style="font-size:13px;font-weight:700;color:#e2e8f0;margin-bottom:3px">${esc(s.title)}</div>
+    <div style="font-size:11.5px;color:rgba(255,255,255,.4);line-height:1.5">${esc(s.desc)}</div>
+  </div>
+  <pre style="background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.07);border-radius:8px;padding:11px 13px;font-size:11px;font-family:monospace;color:#a5b4fc;overflow-x:auto;line-height:1.6;white-space:pre-wrap;word-break:break-all;max-height:160px;overflow-y:auto">${escapedCode}</pre>
+  <div style="display:flex;gap:7px">
+    <button onclick="copyScript('${s.id}')" id="scpbtn-${s.id}" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:7px 12px;border-radius:8px;background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.22);color:#93c5fd;font-size:11.5px;font-weight:700;cursor:pointer;transition:all .15s">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+      Copy Script
+    </button>
+    <button onclick="useScriptInTicket('${s.id}')" style="display:flex;align-items:center;justify-content:center;gap:5px;padding:7px 12px;border-radius:8px;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);color:#86efac;font-size:11.5px;font-weight:700;cursor:pointer;transition:all .15s">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+      Use in Ticket
+    </button>
+  </div>
+</div>`;
+  }).join('');
+}
+
+function copyScript(id){
+  const all=[...BUILTIN_SCRIPTS,...getCustomScripts()];
+  const s=all.find(x=>x.id===id);
+  if(!s)return;
+  navigator.clipboard.writeText(s.code).then(()=>{
+    const btn=document.getElementById('scpbtn-'+id);
+    if(btn){btn.innerHTML='<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Copied!';btn.style.background='rgba(34,197,94,.12)';btn.style.borderColor='rgba(34,197,94,.3)';btn.style.color='#86efac';}
+    toast('Script copied to clipboard','success');
+    setTimeout(()=>{if(btn){btn.innerHTML='<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> Copy Script';btn.style.background='';btn.style.borderColor='';btn.style.color='';}},2200);
+  });
+}
+
+function useScriptInTicket(id){
+  const all=[...BUILTIN_SCRIPTS,...getCustomScripts()];
+  const s=all.find(x=>x.id===id);
+  if(!s)return;
+  setView('ticket');
+  const tried=document.getElementById('tTried');
+  if(tried){
+    const existing=tried.value.trim();
+    tried.value=(existing?existing+'\n\n':'')+`[Script: ${s.title}]\n${s.code}`;
+  }
+  toast(`"${s.title}" added to ticket context`,'success');
+}
+
+function openAddScript(){document.getElementById('addScriptModal').style.display='flex';}
+function closeAddScript(){document.getElementById('addScriptModal').style.display='none';}
+
+function saveCustomScript(){
+  const title=document.getElementById('csTitle').value.trim();
+  const cat=document.getElementById('csCategory').value.trim()||'Custom';
+  const shell=document.getElementById('csShell').value;
+  const desc=document.getElementById('csDesc').value.trim();
+  const code=document.getElementById('csCode').value.trim();
+  if(!title||!code){toast('Title and code are required','error');return;}
+  const arr=getCustomScripts();
+  arr.unshift({id:'c'+Date.now(),cat,shell,title,desc,code});
+  saveCustomScripts(arr);
+  closeAddScript();
+  ['csTitle','csCategory','csDesc','csCode'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  renderScripts();
+  toast('Custom script saved','success');
+}
+
+function deleteCustomScript(id){
+  const arr=getCustomScripts().filter(s=>s.id!==id);
+  saveCustomScripts(arr);
+  renderScripts();
+  toast('Script deleted','success');
 }
 
 // Keyboard shortcut
