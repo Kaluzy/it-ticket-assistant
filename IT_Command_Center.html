@@ -819,19 +819,26 @@ async function generate(){
   show('outEmpty',false);show('outLoading',true);show('outPanel',false);show('outError',false);
   document.getElementById('addQueueWrap').style.display='none';
 
-  const prompt=`You are an expert IT field support engineer at Maxim Healthcare Services. Analyze the ticket and return ONLY valid JSON — no markdown, no code fences.
+  const sysMsg=`You are an expert IT field support engineer at Maxim Healthcare Services.
+Analyze IT support tickets and return structured JSON.
+CRITICAL RULES:
+1. Return ONLY a valid JSON object — no markdown, no code fences, no explanations outside the JSON.
+2. The JSON must have exactly 6 keys: teams, root, user, tech, work, close.
+3. Each key MUST contain completely DIFFERENT content — never copy or repeat the same text across fields.
+4. Each field serves a totally different purpose — read each description carefully and stay on topic.`;
 
+  const userMsg=`Ticket details:
 User: ${user}
-Issue: ${issue}
-${tried?`\nWhat service desk already attempted:\n${tried}\n\nUse this as diagnostic context — do NOT skip these steps entirely. Instead, analyze what these attempts reveal about the root cause and build your troubleshooting from that point forward.`:''}
-JSON keys required:
+Issue: ${issue}${tried?`\nPrevious service desk attempts: ${tried}\n(Use as diagnostic context — build from what was already tried)`:''}
+
+Return this exact JSON with DISTINCT content in every field:
 {
-  "teams": "Warm Teams message starting: Hi ${user}, I hope you are well! I was looking at your ticket regarding [brief issue summary]. Could you briefly describe what you are experiencing so I can better assist you? I appreciate it!",
-  "root": "2-4 numbered root causes, specific and technical",
-  "user": "Numbered step-by-step instructions for the user in simple non-technical language",
-  "tech": "Numbered advanced troubleshooting steps for the IT engineer — include registry paths, commands, or settings paths where relevant",
-  "work": "ServiceNow internal work note: state what was done, what was communicated, current status (On Hold - Awaiting user response)",
-  "close": "ServiceNow closing note: professional summary of issue, root cause, steps taken, and resolution. Ready to paste when closing."
+  "teams": "A short, warm Microsoft Teams message addressed to ${user}. Greet them, mention you saw their ticket about [brief topic], and ask them to describe what they are experiencing. Friendly tone. 2-3 sentences max.",
+  "root": "Numbered list of 2-4 technical root causes specific to this issue type. Each cause should be a distinct technical reason. Format: 1. ... 2. ... etc.",
+  "user": "Numbered step-by-step self-help instructions written in plain non-technical language for the END USER to try. Simple, clear, no jargon. Format: 1. ... 2. ... etc.",
+  "tech": "Numbered advanced troubleshooting steps for the IT ENGINEER only. Include PowerShell commands, registry paths, admin console navigation, or diagnostic tools specific to this issue. Format: 1. ... 2. ... etc.",
+  "work": "ServiceNow INTERNAL work note. Document: what was done so far, what was communicated to the user, and set status to On Hold - Awaiting user response. Professional internal tone.",
+  "close": "ServiceNow CLOSING note. Professional summary covering: issue reported, confirmed root cause, all steps taken to resolve, and final resolution status. Ready to paste when ticket is resolved."
 }`;
 
   try{
@@ -846,7 +853,7 @@ JSON keys required:
     const res=await fetch(endpoint,{
       method:'POST',
       headers,
-      body:JSON.stringify({model:modelId,messages:[{role:'user',content:prompt}],temperature:0.35,max_tokens:1800})
+      body:JSON.stringify({model:modelId,messages:[{role:'system',content:sysMsg},{role:'user',content:userMsg}],temperature:0.4,max_tokens:3000})
     });
     if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e?.error?.message||`API ${res.status}`);}
     const data=await res.json();
@@ -866,7 +873,13 @@ JSON keys required:
         if(!normalized[k])normalized[k]='Not generated.';
       });
       parsed=normalized;
-    }catch{throw new Error('AI returned unexpected format. Try again or switch models.');}
+      // Detect if all/most fields have identical content (model collapse bug)
+      const vals=Object.values(parsed).filter(v=>v&&v!=='Not generated.');
+      const unique=new Set(vals);
+      if(vals.length>=4&&unique.size===1){
+        throw new Error('AI returned duplicate content in all fields. Try a different model or click Generate again.');
+      }
+    }catch(e){throw new Error(e.message||'AI returned unexpected format. Try again or switch models.');}
 
     STATE.result=parsed;
     saveTicketToHistory(user,issue,model,parsed,inc,trainingOn);
