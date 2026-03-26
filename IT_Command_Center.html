@@ -200,7 +200,7 @@ textarea.inp{resize:vertical;min-height:88px;line-height:1.6}
     <div style="display:flex;align-items:center;gap:8px">
       <div style="width:28px;height:28px;background:linear-gradient(135deg,#2563eb,#0891b2);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;color:#fff">IT</div>
       <span style="font-size:13px;font-weight:700;color:rgba(255,255,255,.9)">Command Center</span>
-      <span style="font-size:10px;color:rgba(255,255,255,.25);font-weight:500">Maxim Healthcare · v3.2</span>
+      <span style="font-size:10px;color:rgba(255,255,255,.25);font-weight:500">Maxim Healthcare · v3.4</span>
     </div>
     <div style="flex:1"></div>
     <div id="apiIndicator" style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:600">
@@ -236,6 +236,10 @@ textarea.inp{resize:vertical;min-height:88px;line-height:1.6}
       <div class="nav-item" id="nav-history" onclick="setView('history')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
         <span class="nl">History</span>
+      </div>
+      <div class="nav-item" id="nav-reports" onclick="setView('reports')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        <span class="nl">Reports</span>
       </div>
       <div style="flex:1"></div>
       <div style="padding:8px 6px;border-top:1px solid rgba(255,255,255,.05);margin-top:6px">
@@ -495,6 +499,55 @@ textarea.inp{resize:vertical;min-height:88px;line-height:1.6}
         <div id="histList" style="display:flex;flex-direction:column;gap:8px"></div>
       </div>
 
+      <!-- REPORTS VIEW -->
+      <div id="view-reports" style="display:none;flex:1;overflow-y:auto;padding:24px;flex-direction:column;gap:20px">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px">
+          <div>
+            <h2 style="font-size:17px;font-weight:800">Reports & Trends</h2>
+            <p style="font-size:12px;color:rgba(255,255,255,.35);margin-top:2px">Smart analysis of your ticket patterns</p>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <select id="reportRange" class="inp" style="width:auto;padding:7px 12px;font-size:12px" onchange="renderReports()">
+              <option value="7">Last 7 days</option>
+              <option value="14">Last 14 days</option>
+              <option value="30" selected>Last 30 days</option>
+              <option value="999">All time</option>
+            </select>
+            <button onclick="exportWeeklyReport()" style="display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.25);color:#86efac;font-size:12px;font-weight:700;cursor:pointer">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Export Report
+            </button>
+          </div>
+        </div>
+
+        <!-- Stats strip -->
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px" id="rptStats"></div>
+
+        <!-- Trending issues -->
+        <div class="glass" style="border-radius:14px;padding:18px">
+          <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,.35);letter-spacing:.07em;text-transform:uppercase;margin-bottom:14px">🔥 Trending Issues</div>
+          <div id="rptTrending" style="display:flex;flex-direction:column;gap:8px"></div>
+        </div>
+
+        <!-- Training flags -->
+        <div class="glass" style="border-radius:14px;padding:18px">
+          <div style="font-size:11px;font-weight:700;color:rgba(245,158,11,.5);letter-spacing:.07em;text-transform:uppercase;margin-bottom:14px">🎓 Training Flags</div>
+          <div id="rptTraining" style="display:flex;flex-direction:column;gap:8px"></div>
+        </div>
+
+        <!-- Repeat users -->
+        <div class="glass" style="border-radius:14px;padding:18px">
+          <div style="font-size:11px;font-weight:700;color:rgba(139,92,246,.6);letter-spacing:.07em;text-transform:uppercase;margin-bottom:14px">🔁 Repeat Users</div>
+          <div id="rptRepeat" style="display:flex;flex-direction:column;gap:8px"></div>
+        </div>
+
+        <!-- Recent resolutions -->
+        <div class="glass" style="border-radius:14px;padding:18px">
+          <div style="font-size:11px;font-weight:700;color:rgba(34,197,94,.5);letter-spacing:.07em;text-transform:uppercase;margin-bottom:14px">✅ Recent Resolutions</div>
+          <div id="rptResolutions" style="display:flex;flex-direction:column;gap:8px"></div>
+        </div>
+      </div>
+
     </main>
   </div>
 </div>
@@ -642,7 +695,7 @@ function boot(){
 // ══════════════════════════════════════════
 function setView(v){
   STATE.view=v;
-  ['dashboard','ticket','queue','history'].forEach(id=>{
+  ['dashboard','ticket','queue','history','reports'].forEach(id=>{
     const el=document.getElementById('view-'+id);
     if(el){el.style.display=id===v?'flex':'none';if(id===v)el.classList.add('view-enter');}
   });
@@ -1044,6 +1097,149 @@ function reloadTicket(id){
   show('outEmpty',false);show('outPanel',true);show('outLoading',false);show('outError',false);
   document.getElementById('addQueueWrap').style.display='flex';
   setTab('teams');
+}
+
+// ══════════════════════════════════════════
+//  REPORTS
+// ══════════════════════════════════════════
+function renderReports(){
+  const days=parseInt(document.getElementById('reportRange')?.value||30);
+  const cutoff=Date.now()-(days*24*60*60*1000);
+  const tickets=getTickets().filter(t=>t.createdAt>=cutoff);
+
+  // ── Stats strip ──
+  const training=tickets.filter(t=>t.training);
+  const byPri=tickets.reduce((a,t)=>{const p=getPriority(t.issue).k;a[p]=(a[p]||0)+1;return a},{});
+  document.getElementById('rptStats').innerHTML=`
+    <div class="stat-card"><div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.35);letter-spacing:.07em;text-transform:uppercase;margin-bottom:8px">Total Tickets</div><div style="font-size:28px;font-weight:900" class="grad-text">${tickets.length}</div></div>
+    <div class="stat-card"><div style="font-size:10px;font-weight:700;color:rgba(239,68,68,.5);letter-spacing:.07em;text-transform:uppercase;margin-bottom:8px">High Priority</div><div style="font-size:28px;font-weight:900;color:#fca5a5">${byPri.high||0}</div></div>
+    <div class="stat-card"><div style="font-size:10px;font-weight:700;color:rgba(245,158,11,.5);letter-spacing:.07em;text-transform:uppercase;margin-bottom:8px">Training Flags</div><div style="font-size:28px;font-weight:900;color:#fcd34d">${training.length}</div></div>
+    <div class="stat-card"><div style="font-size:10px;font-weight:700;color:rgba(139,92,246,.5);letter-spacing:.07em;text-transform:uppercase;margin-bottom:8px">Unique Users</div><div style="font-size:28px;font-weight:900;color:#c4b5fd">${new Set(tickets.map(t=>t.user.toLowerCase())).size}</div></div>`;
+
+  // ── Trending issues ──
+  const issueCounts={};
+  tickets.forEach(t=>{
+    const key=t.issue.toLowerCase().slice(0,60);
+    if(!issueCounts[key])issueCounts[key]={count:0,label:t.issue.slice(0,70),pri:getPriority(t.issue)};
+    issueCounts[key].count++;
+  });
+  const trending=Object.values(issueCounts).sort((a,b)=>b.count-a.count).slice(0,8);
+  const maxCount=trending[0]?.count||1;
+  const tEl=document.getElementById('rptTrending');
+  if(!trending.length){tEl.innerHTML='<div style="font-size:12px;color:rgba(255,255,255,.25)">No tickets in this period</div>';return;}
+  tEl.innerHTML=trending.map(t=>`
+    <div style="display:flex;align-items:center;gap:10px">
+      <span class="bdg ${t.pri.cls}" style="flex-shrink:0;width:52px;text-align:center">${t.count}x</span>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:12px;font-weight:600;color:rgba(255,255,255,.7);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:4px">${esc(t.label)}</div>
+        <div style="height:6px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden">
+          <div style="height:100%;width:${Math.round((t.count/maxCount)*100)}%;background:linear-gradient(90deg,#3b82f6,#06b6d4);border-radius:3px;transition:width .4s"></div>
+        </div>
+      </div>
+    </div>`).join('');
+
+  // ── Training flags ──
+  const trEl=document.getElementById('rptTraining');
+  if(!training.length){trEl.innerHTML='<div style="font-size:12px;color:rgba(255,255,255,.25)">No training flags in this period</div>';}
+  else{trEl.innerHTML=training.map(t=>`
+    <div class="hcard" onclick="reloadTicket('${t.id}')">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-size:13px;font-weight:600">${esc(t.user)}</span>
+        ${t.inc?`<span class="bdg bdg-purple">${esc(t.inc)}</span>`:''}
+        <span style="font-size:11px;color:rgba(255,255,255,.35);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(t.issue.slice(0,60))}</span>
+        <span style="font-size:10px;color:rgba(255,255,255,.25)">${timeAgo(t.createdAt)}</span>
+      </div>
+    </div>`).join('');}
+
+  // ── Repeat users ──
+  const userMap={};
+  tickets.forEach(t=>{
+    const k=t.user.toLowerCase();
+    if(!userMap[k])userMap[k]={name:t.user,count:0,issues:[]};
+    userMap[k].count++;
+    if(userMap[k].issues.length<3)userMap[k].issues.push(t.issue.slice(0,40));
+  });
+  const repeats=Object.values(userMap).filter(u=>u.count>1).sort((a,b)=>b.count-a.count).slice(0,6);
+  const ruEl=document.getElementById('rptRepeat');
+  if(!repeats.length){ruEl.innerHTML='<div style="font-size:12px;color:rgba(255,255,255,.25)">No repeat users in this period</div>';}
+  else{ruEl.innerHTML=repeats.map(u=>`
+    <div class="hcard">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,rgba(139,92,246,.3),rgba(59,130,246,.3));border:1px solid rgba(139,92,246,.3);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#c4b5fd;flex-shrink:0">${esc(u.name.charAt(0).toUpperCase())}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-size:12px;font-weight:700">${esc(u.name)} <span class="bdg bdg-purple">${u.count} tickets</span></div>
+          <div style="font-size:11px;color:rgba(255,255,255,.35);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(u.issues.join(' · '))}</div>
+        </div>
+      </div>
+    </div>`).join('');}
+
+  // ── Recent resolutions ──
+  const resolved=tickets.filter(t=>t.result?.close).slice(0,5);
+  const rrEl=document.getElementById('rptResolutions');
+  if(!resolved.length){rrEl.innerHTML='<div style="font-size:12px;color:rgba(255,255,255,.25)">No resolved tickets yet</div>';}
+  else{rrEl.innerHTML=resolved.map(t=>`
+    <div class="hcard" onclick="reloadTicket('${t.id}')">
+      <div style="display:flex;align-items:flex-start;gap:10px">
+        <div style="flex:1">
+          <div style="display:flex;align-items:center;gap:7px;margin-bottom:4px">
+            <span style="font-size:12px;font-weight:700">${esc(t.user)}</span>
+            ${t.inc?`<span class="bdg bdg-purple">${esc(t.inc)}</span>`:''}
+            <span class="bdg ${getPriority(t.issue).cls}">${getPriority(t.issue).l}</span>
+          </div>
+          <div style="font-size:11px;color:rgba(255,255,255,.4);margin-bottom:6px">${esc(t.issue.slice(0,70))}</div>
+          <div style="font-size:11px;color:rgba(34,197,94,.7);line-height:1.5;background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.12);border-radius:7px;padding:7px 10px">${esc(t.result.close.slice(0,120))}${t.result.close.length>120?'…':''}</div>
+        </div>
+        <span style="font-size:10px;color:rgba(255,255,255,.25);flex-shrink:0">${timeAgo(t.createdAt)}</span>
+      </div>
+    </div>`).join('');}
+}
+
+function exportWeeklyReport(){
+  const days=parseInt(document.getElementById('reportRange')?.value||30);
+  const cutoff=Date.now()-(days*24*60*60*1000);
+  const tickets=getTickets().filter(t=>t.createdAt>=cutoff);
+  if(!tickets.length){toast('No tickets in this period','error');return;}
+
+  const date=new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+  const training=tickets.filter(t=>t.training);
+
+  // Count issue types
+  const issueCounts={};
+  tickets.forEach(t=>{
+    const key=t.issue.toLowerCase().slice(0,60);
+    if(!issueCounts[key])issueCounts[key]={label:t.issue.slice(0,70),count:0};
+    issueCounts[key].count++;
+  });
+  const trending=Object.values(issueCounts).sort((a,b)=>b.count-a.count).slice(0,5);
+
+  let report=`IT TICKET REPORT — ${date}\nPeriod: Last ${days} days\nGenerated by IT Command Center · Maxim Healthcare\n`;
+  report+=`${'='.repeat(55)}\n\n`;
+  report+=`SUMMARY\n${'─'.repeat(30)}\n`;
+  report+=`Total Tickets Processed : ${tickets.length}\n`;
+  report+=`High Priority            : ${tickets.filter(t=>getPriority(t.issue).k==='high').length}\n`;
+  report+=`Training Flags           : ${training.length}\n`;
+  report+=`Unique Users             : ${new Set(tickets.map(t=>t.user.toLowerCase())).size}\n\n`;
+  report+=`TOP TRENDING ISSUES\n${'─'.repeat(30)}\n`;
+  trending.forEach((t,i)=>{report+=`${i+1}. ${t.label} (${t.count}x)\n`;});
+  if(training.length){
+    report+=`\nTRAINING FLAGS\n${'─'.repeat(30)}\n`;
+    training.forEach(t=>{report+=`• ${t.user}${t.inc?' ['+t.inc+']':''} — ${t.issue.slice(0,60)}\n`;});
+  }
+  report+=`\nALL TICKETS\n${'─'.repeat(30)}\n`;
+  tickets.forEach(t=>{
+    report+=`\n[${new Date(t.createdAt).toLocaleDateString()}] ${t.user}${t.inc?' | '+t.inc:''}`;
+    report+=`\nIssue: ${t.issue}\n`;
+    if(t.result?.close)report+=`Resolution: ${t.result.close.slice(0,150)}\n`;
+    report+=`${'-'.repeat(40)}\n`;
+  });
+
+  // Download as .txt
+  const blob=new Blob([report],{type:'text/plain'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=`IT_Report_${new Date().toISOString().slice(0,10)}.txt`;
+  a.click();
+  toast('Report exported!','success');
 }
 
 function deleteTicket(id){
