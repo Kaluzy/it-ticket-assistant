@@ -864,6 +864,20 @@ Return this exact JSON with DISTINCT content in every field:
       // Try to extract JSON object if there's surrounding text
       const match=clean.match(/\{[\s\S]*\}/);
       if(match)clean=match[0];
+      // Sanitize: escape literal newlines/tabs inside JSON string values
+      // (AI models often embed raw newlines in strings, which breaks JSON.parse)
+      let sanitized='';let inStr=false;let esc=false;
+      for(let i=0;i<clean.length;i++){
+        const c=clean[i];
+        if(esc){sanitized+=c;esc=false;continue;}
+        if(c==='\\'){esc=true;sanitized+=c;continue;}
+        if(c==='"'){inStr=!inStr;sanitized+=c;continue;}
+        if(inStr&&c==='\n'){sanitized+='\\n';continue;}
+        if(inStr&&c==='\r'){sanitized+='\\r';continue;}
+        if(inStr&&c==='\t'){sanitized+='\\t';continue;}
+        sanitized+=c;
+      }
+      clean=sanitized;
       parsed=JSON.parse(clean);
       // Normalize keys — handle both short and long key names
       const keyMap={teams:['teams','teamsMessage','teams_message'],root:['root','rootCause','root_cause'],user:['user','userSteps','user_steps'],tech:['tech','techSteps','tech_steps'],work:['work','workNote','work_note'],close:['close','closingNote','closing_note']};
@@ -1480,6 +1494,13 @@ function importSelectedTickets(){
 // ══════════════════════════════════════════
 function formatOutput(text){
   if(!text||text==='Not generated.')return'<span style="color:rgba(255,255,255,.25);font-style:italic">Not generated.</span>';
+  // Split inline numbered lists: "1. text 2. text" → separate lines
+  // Only when the text looks like a numbered list (starts with a digit+dot)
+  if(/^\s*\d+[.)]\s/.test(text)){
+    text=text.replace(/([.!?])\s+(\d+[.)]\s)/g,'$1\n$2');
+  }
+  // Also handle "\n" literal strings from JSON (model sometimes writes \\n as text)
+  text=text.replace(/\\n/g,'\n');
   const lines=text.split(/\r?\n/);
   let html='';
   let inList=false;
