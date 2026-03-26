@@ -78,6 +78,10 @@ html,body{height:100%;font-family:'Inter',sans-serif;background:#070d1a;color:#e
 .hcard:hover{background:rgba(255,255,255,.06);border-color:rgba(59,130,246,.2)}
 textarea.inp{resize:vertical;min-height:88px;line-height:1.6}
 .out-body{font-size:12.5px;line-height:1.75;color:rgba(255,255,255,.65);white-space:pre-wrap;word-break:break-word;min-height:60px}
+.qcard.dragging{opacity:.4;transform:scale(.97)}
+.qcol-drop{background:rgba(59,130,246,.08);border-radius:10px;outline:2px dashed rgba(59,130,246,.4);outline-offset:2px}
+.qcard{cursor:grab}
+.qcard:active{cursor:grabbing}
 </style>
 </head>
 <body>
@@ -903,9 +907,18 @@ function renderQueue(){
     const count=document.getElementById(cnt);
     if(!col)return;
     count.textContent=q[status].length;
+    // Set up drop zone
+    col.ondragover=e=>{e.preventDefault();col.classList.add('qcol-drop')};
+    col.ondragleave=e=>{if(!col.contains(e.relatedTarget))col.classList.remove('qcol-drop')};
+    col.ondrop=e=>{
+      e.preventDefault();col.classList.remove('qcol-drop');
+      const cardId=e.dataTransfer.getData('cardId');
+      const fromStatus=e.dataTransfer.getData('fromStatus');
+      if(fromStatus!==status)moveCard(cardId,fromStatus,status);
+    };
     col.innerHTML='';
     if(!q[status].length){
-      col.innerHTML='<div style="text-align:center;padding:20px 0;font-size:11px;color:rgba(255,255,255,.18)">Empty</div>';
+      col.innerHTML='<div style="text-align:center;padding:20px 0;font-size:11px;color:rgba(255,255,255,.18);border:2px dashed rgba(255,255,255,.06);border-radius:10px;margin-top:4px">Drop tickets here</div>';
       return;
     }
     q[status].forEach(card=>{
@@ -917,15 +930,28 @@ function renderQueue(){
       const slaLabel=hoursOld>=24?'⚠ 24h+':hoursOld>=8?'8h+':hoursOld>=4?'4h+':'';
       const div=document.createElement('div');
       div.className='qcard';
+      div.draggable=true;
+      div.ondragstart=e=>{
+        e.dataTransfer.setData('cardId',card.id);
+        e.dataTransfer.setData('fromStatus',status);
+        div.classList.add('dragging');
+      };
+      div.ondragend=()=>div.classList.remove('dragging');
       div.innerHTML=`
         <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:7px">
-          <span style="font-size:12px;font-weight:700;color:#e2e8f0">${esc(card.user)}</span>
+          <div style="min-width:0">
+            <span style="font-size:12px;font-weight:700;color:#e2e8f0">${esc(card.user)}</span>
+            ${card.inc?`<span style="font-size:10px;color:#a5b4fc;margin-left:5px">${esc(card.inc)}</span>`:''}
+          </div>
           <span class="bdg ${pri.cls}" style="flex-shrink:0">${pri.l}</span>
         </div>
         <div style="font-size:11px;color:rgba(255,255,255,.4);line-height:1.5;margin-bottom:9px">${esc(card.issue.length>55?card.issue.slice(0,55)+'…':card.issue)}</div>
-        <div style="display:flex;align-items:center;justify-content:space-between">
-          <span style="font-size:10px;color:rgba(255,255,255,.25)">${age}</span>${slaLabel?`<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:100px;background:${slaBg};color:${slaColor}">${slaLabel}</span>`:''}
-          <div style="display:flex;gap:5px">${getMoveButtons(card.id,status)}</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:6px">
+          <div style="display:flex;align-items:center;gap:5px">
+            <span style="font-size:10px;color:rgba(255,255,255,.25)">${age}</span>
+            ${slaLabel?`<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:100px;background:${slaBg};color:${slaColor}">${slaLabel}</span>`:''}
+          </div>
+          <div style="display:flex;gap:4px;align-items:center">${getMoveButtons(card.id,status)}</div>
         </div>`;
       col.appendChild(div);
     });
@@ -933,13 +959,18 @@ function renderQueue(){
 }
 
 function getMoveButtons(id,status){
-  const opts={new:'active',active:'hold',hold:'tbx'};
-  const labels={new:'Active →',active:'Hold →',hold:'TBX →'};
+  const prev={active:'new',hold:'active',tbx:'hold'};
+  const next={new:'active',active:'hold',hold:'tbx'};
+  const nextLabel={new:'Active',active:'Hold',hold:'TBX'};
+  const prevLabel={active:'← New',hold:'← Active',tbx:'← Hold'};
   let btns='';
-  if(opts[status]){
-    btns+=`<button onclick="moveCard('${id}','${status}','${opts[status]}')" style="font-size:10px;font-weight:600;padding:3px 8px;border-radius:6px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.5);cursor:pointer">${labels[status]}</button>`;
+  if(prev[status]){
+    btns+=`<button onclick="moveCard('${id}','${status}','${prev[status]}')" title="Move back" style="font-size:10px;font-weight:600;padding:3px 7px;border-radius:6px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);color:rgba(255,255,255,.4);cursor:pointer">${prevLabel[status]}</button>`;
   }
-  btns+=`<button onclick="moveCard('${id}','${status}','delete')" style="font-size:10px;padding:3px 7px;border-radius:6px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);color:rgba(239,68,68,.6);cursor:pointer">✕</button>`;
+  if(next[status]){
+    btns+=`<button onclick="moveCard('${id}','${status}','${next[status]}')" style="font-size:10px;font-weight:600;padding:3px 7px;border-radius:6px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.5);cursor:pointer">${nextLabel[status]} →</button>`;
+  }
+  btns+=`<button onclick="moveCard('${id}','${status}','delete')" title="Remove" style="font-size:10px;padding:3px 7px;border-radius:6px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);color:rgba(239,68,68,.6);cursor:pointer">✕</button>`;
   return btns;
 }
 
