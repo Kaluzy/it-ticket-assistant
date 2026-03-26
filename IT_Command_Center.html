@@ -147,7 +147,7 @@ textarea.inp{resize:vertical;min-height:88px;line-height:1.6}
   .mnav-btn{padding:10px 4px}
 }
 </style>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 </head>
 <body>
 
@@ -1022,7 +1022,10 @@ function checkApiKeyAndBoot(){
 
 window.addEventListener('DOMContentLoaded',()=>{
   document.getElementById('dashDate').textContent=new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
-  initAuth();
+  // Boot the app immediately — never block on Supabase
+  checkApiKeyAndBoot();
+  // Auth + sync run silently in background
+  setTimeout(initAuth,500);
 });
 
 async function pasteKey(fieldId){
@@ -2552,23 +2555,24 @@ function getSupa(){
 async function initAuth(){
   try{
     const sb=getSupa();
-    if(!sb){checkApiKeyAndBoot();return;}
-    const{data:{session}}=await sb.auth.getSession();
+    if(!sb) return; // Supabase CDN not loaded — local mode only
+    const{data:{session},error:sErr}=await sb.auth.getSession();
+    if(sErr) throw sErr;
     if(session){
       currentUser=session.user;
       updateUserUI();
-      await syncFromSupabase();
+      syncFromSupabase(); // background, don't await
     }else{
-      // Show sign-in header button (non-blocking)
+      // Not logged in — show subtle Sync button in header
       const btn=document.getElementById('signInHeaderBtn');
-      if(btn)btn.style.display='flex';
+      if(btn) btn.style.display='flex';
     }
     sb.auth.onAuthStateChange(async(event,session)=>{
       if(event==='SIGNED_IN'){
         currentUser=session.user;
         updateUserUI();
         await syncFromSupabase();
-        if(document.getElementById('mainApp').style.display!=='none')renderDashboard();
+        renderDashboard();
       }else if(event==='SIGNED_OUT'){
         currentUser=null;
         updateUserUI();
@@ -2576,8 +2580,8 @@ async function initAuth(){
     });
   }catch(e){
     console.warn('Supabase init:',e);
+    // Silently fall back to local mode — app always works
   }
-  checkApiKeyAndBoot();
 }
 
 // ── Auth modal helpers ──
