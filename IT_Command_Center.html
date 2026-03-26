@@ -161,7 +161,7 @@ textarea.inp{resize:vertical;min-height:88px;line-height:1.6}
     <div style="text-align:center;margin-bottom:22px">
       <div style="width:52px;height:52px;background:linear-gradient(135deg,#0891b2,#2563eb);border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:22px;box-shadow:0 0 28px rgba(8,145,178,.5)">☁️</div>
       <h1 style="font-size:20px;font-weight:800;margin-bottom:5px" class="grad-text">Sync Across Devices</h1>
-      <p style="font-size:12px;color:rgba(255,255,255,.4);line-height:1.5">Your tickets, queue &amp; KB — everywhere you work</p>
+      <p style="font-size:12px;color:rgba(255,255,255,.4);line-height:1.5">Sign in once → your API key, tickets, queue &amp; KB load automatically on every device. Never paste keys again.</p>
     </div>
     <div style="display:flex;gap:6px;margin-bottom:18px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:4px">
       <button id="authTab-in" onclick="switchAuthTab('in')" style="flex:1;padding:9px;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;border:none;background:rgba(59,130,246,.2);color:#93c5fd;transition:all .15s">Sign In</button>
@@ -1077,6 +1077,7 @@ function setupSave(provider){
     setKey(k);setProvider('or');
   }
   document.getElementById('setupModal').style.display='none';
+  bgSync(); // persist key to Supabase if logged in — never re-enter it again
   boot();
 }
 
@@ -2561,9 +2562,14 @@ async function initAuth(){
     if(session){
       currentUser=session.user;
       updateUserUI();
-      syncFromSupabase(); // background, don't await
+      await syncFromSupabase(); // await so API key is loaded before boot check
+      // If sync pulled an API key and app isn't booted yet — boot now silently
+      const hasKey=getKey()||(getProvider()==='google'&&getGoogleKey());
+      if(hasKey&&document.getElementById('mainApp').style.display!=='flex'){
+        document.getElementById('setupModal').style.display='none';
+        boot();
+      }
     }else{
-      // Not logged in — show subtle Sync button in header
       const btn=document.getElementById('signInHeaderBtn');
       if(btn) btn.style.display='flex';
     }
@@ -2572,7 +2578,14 @@ async function initAuth(){
         currentUser=session.user;
         updateUserUI();
         await syncFromSupabase();
-        renderDashboard();
+        const hasKey=getKey()||(getProvider()==='google'&&getGoogleKey());
+        const app=document.getElementById('mainApp');
+        if(hasKey&&app.style.display!=='flex'){
+          document.getElementById('setupModal').style.display='none';
+          boot();
+        }else if(app.style.display==='flex'){
+          renderDashboard();
+        }
       }else if(event==='SIGNED_OUT'){
         currentUser=null;
         updateUserUI();
@@ -2716,15 +2729,17 @@ async function syncFromSupabase(){
     const{data,error}=await sb.from('user_data').select('*').eq('user_id',currentUser.id).single();
     if(error&&error.code!=='PGRST116')throw error;
     if(data){
-      // Hydrate localStorage from cloud
       if(data.tickets)localStorage.setItem('itc_t',JSON.stringify(data.tickets));
       if(data.queue)localStorage.setItem('itc_q',JSON.stringify(data.queue));
       if(data.kb)localStorage.setItem('itc_kb',JSON.stringify(data.kb));
       if(data.scripts)localStorage.setItem('itc_custom_scripts',JSON.stringify(data.scripts));
+      // ★ Restore API keys — core of "never paste again"
+      if(data.settings?.or_key){setKey(data.settings.or_key);}
+      if(data.settings?.g_key){setGoogleKey(data.settings.g_key);}
+      if(data.settings?.provider){setProvider(data.settings.provider);}
       setSyncStatus('synced');
     }else{
-      // First time this user logs in — push existing local data up
-      await pushToSupabase();
+      await pushToSupabase(); // first login — upload everything
     }
   }catch(e){
     console.warn('syncFromSupabase:',e);
@@ -2742,6 +2757,7 @@ async function pushToSupabase(){
       queue:getQueue(),
       kb:getKb(),
       scripts:getCustomScripts(),
+      settings:{or_key:getKey(),g_key:getGoogleKey(),provider:getProvider()},
       updated_at:new Date().toISOString()
     };
     const{error}=await sb.from('user_data').upsert(payload,{onConflict:'user_id'});
