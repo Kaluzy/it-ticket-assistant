@@ -1509,13 +1509,13 @@ function importSelectedTickets(){
 // ══════════════════════════════════════════
 function formatOutput(text){
   if(!text||text==='Not generated.')return'<span style="color:rgba(255,255,255,.25);font-style:italic">Not generated.</span>';
-  // Split inline numbered lists: "1. text 2. text" → separate lines
-  // Only when the text looks like a numbered list (starts with a digit+dot)
-  if(/^\s*\d+[.)]\s/.test(text)){
-    text=text.replace(/([.!?])\s+(\d+[.)]\s)/g,'$1\n$2');
-  }
-  // Also handle "\n" literal strings from JSON (model sometimes writes \\n as text)
+  // Convert literal \n strings the model sometimes writes
   text=text.replace(/\\n/g,'\n');
+  // Split inline numbered list items onto their own lines.
+  // Matches: " 2. " / " 3. " / " 10. " etc. — requires a space AFTER the dot
+  // so "v2.0" or "2.5" are never split (no space after dot in decimals/versions).
+  // item 1 is left alone (it's always at the start); items 2+ get a newline prepended.
+  text=text.replace(/ +(\d{1,2})[.)]\s/g,'\n$1. ');
   const lines=text.split(/\r?\n/);
   let html='';
   let inList=false;
