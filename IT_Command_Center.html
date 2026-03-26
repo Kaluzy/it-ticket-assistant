@@ -77,7 +77,7 @@ html,body{height:100%;font-family:'Inter',sans-serif;background:#070d1a;color:#e
 .hcard{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:12px;transition:all .15s;cursor:pointer}
 .hcard:hover{background:rgba(255,255,255,.06);border-color:rgba(59,130,246,.2)}
 textarea.inp{resize:vertical;min-height:88px;line-height:1.6}
-.out-body{font-size:12.5px;line-height:1.75;color:rgba(255,255,255,.65);white-space:pre-wrap;word-break:break-word;min-height:60px}
+.out-body{font-size:12.5px;line-height:1.75;color:rgba(255,255,255,.65);word-break:break-word;min-height:60px}
 .qcard.dragging{opacity:.4;transform:scale(.97)}
 .qcol-drop{background:rgba(59,130,246,.08);border-radius:10px;outline:2px dashed rgba(59,130,246,.4);outline-offset:2px}
 .qcard{cursor:grab}
@@ -849,7 +849,7 @@ function setTab(k){
   document.getElementById('tabLabel').className=`bdg ${t.bdg}`;
   document.getElementById('tabLabel').textContent=t.l;
   const body=document.getElementById('tabBody');
-  body.textContent=STATE.result?.[k]||'No content generated.';
+  body.innerHTML=formatOutput(STATE.result?.[k]||'');
   document.getElementById('tabCopyBtn').classList.remove('done');
   document.getElementById('tabCopyBtn').innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> Copy';
 }
@@ -1021,6 +1021,7 @@ function renderHistory(){
         <div style="text-align:right;flex-shrink:0">
           <div style="font-size:10px;color:rgba(255,255,255,.25)">${timeAgo(t.createdAt)}</div>
           <button onclick="reloadTicket('${t.id}')" style="margin-top:6px;font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px;background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.22);color:#93c5fd;cursor:pointer">Load →</button>
+          <button onclick="event.stopPropagation();deleteTicket('${t.id}')" style="margin-top:6px;font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);color:rgba(239,68,68,.6);cursor:pointer">Delete</button>
         </div>
       </div>`;
     el.appendChild(div);
@@ -1045,6 +1046,13 @@ function reloadTicket(id){
   setTab('teams');
 }
 
+function deleteTicket(id){
+  const tickets=getTickets().filter(t=>t.id!==id);
+  saveTickets(tickets);
+  renderDashboard();
+  renderHistory();
+  toast('Ticket deleted','info');
+}
 function clearHistory(){
   if(!confirm('Clear all ticket history?'))return;
   saveTickets([]);
@@ -1070,8 +1078,8 @@ function renderDashboard(){
     const pri=getPriority(t.issue);
     const div=document.createElement('div');
     div.className='hcard';
-    div.onclick=()=>{reloadTicket(t.id)};
-    div.innerHTML=`<div style="display:flex;align-items:center;gap:10px"><div style="flex:1"><span style="font-size:13px;font-weight:600">${esc(t.user)}</span> <span class="bdg ${pri.cls}" style="margin-left:4px">${pri.l}</span><div style="font-size:11px;color:rgba(255,255,255,.35);margin-top:3px">${esc(t.issue.length>70?t.issue.slice(0,70)+'…':t.issue)}</div></div><span style="font-size:10px;color:rgba(255,255,255,.25);flex-shrink:0">${timeAgo(t.createdAt)}</span></div>`;
+    // click handled inline
+    div.innerHTML=`<div style="display:flex;align-items:center;gap:10px"><div style="flex:1;cursor:pointer" onclick="reloadTicket('${t.id}')"><span style="font-size:13px;font-weight:600">${esc(t.user)}</span> <span class="bdg ${pri.cls}" style="margin-left:4px">${pri.l}</span>${t.inc?`<span class="bdg bdg-purple" style="margin-left:4px">${esc(t.inc)}</span>`:''}<div style="font-size:11px;color:rgba(255,255,255,.35);margin-top:3px">${esc(t.issue.length>70?t.issue.slice(0,70)+'…':t.issue)}</div></div><div style="display:flex;align-items:center;gap:8px;flex-shrink:0"><span style="font-size:10px;color:rgba(255,255,255,.25)">${timeAgo(t.createdAt)}</span><button onclick="event.stopPropagation();deleteTicket('${t.id}')" style="padding:3px 8px;border-radius:6px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);color:rgba(239,68,68,.6);font-size:11px;cursor:pointer">✕</button></div></div>`;
     rl.appendChild(div);
   });
 }
@@ -1256,6 +1264,73 @@ function importSelectedTickets(){
   closeSnImport();
   toast(`${selected.length} ticket(s) imported to New queue`,'success');
   setView('queue');
+}
+
+// ══════════════════════════════════════════
+//  OUTPUT FORMATTER
+// ══════════════════════════════════════════
+function formatOutput(text){
+  if(!text||text==='Not generated.')return'<span style="color:rgba(255,255,255,.25);font-style:italic">Not generated.</span>';
+  const lines=text.split(/\r?\n/);
+  let html='';
+  let inList=false;
+  let listType=''; // 'ol' or 'ul'
+
+  const closeLists=()=>{
+    if(inList){html+=`</${listType}>`;inList=false;listType='';}
+  };
+
+  lines.forEach(line=>{
+    const trimmed=line.trim();
+    if(!trimmed){closeLists();html+='<div style="height:6px"></div>';return;}
+
+    // Numbered list: 1. or 1)
+    const numMatch=trimmed.match(/^(\d+)[.)]\s+(.+)/);
+    if(numMatch){
+      if(!inList||listType!=='ol'){
+        closeLists();
+        html+='<ol style="margin:6px 0 6px 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:5px">';
+        inList=true;listType='ol';
+      }
+      html+=`<li style="display:flex;gap:8px;align-items:flex-start"><span style="min-width:20px;height:20px;background:rgba(59,130,246,.2);border:1px solid rgba(59,130,246,.3);border-radius:5px;font-size:10px;font-weight:700;color:#93c5fd;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">${numMatch[1]}</span><span style="color:rgba(255,255,255,.75);font-size:12.5px;line-height:1.6">${formatInline(numMatch[2])}</span></li>`;
+      return;
+    }
+
+    // Bullet list: - or • or *
+    const bulletMatch=trimmed.match(/^[-•*]\s+(.+)/);
+    if(bulletMatch){
+      if(!inList||listType!=='ul'){
+        closeLists();
+        html+='<ul style="margin:6px 0 6px 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:5px">';
+        inList=true;listType='ul';
+      }
+      html+=`<li style="display:flex;gap:8px;align-items:flex-start"><span style="width:6px;height:6px;background:rgba(99,102,241,.7);border-radius:50%;flex-shrink:0;margin-top:7px"></span><span style="color:rgba(255,255,255,.75);font-size:12.5px;line-height:1.6">${formatInline(bulletMatch[1])}</span></li>`;
+      return;
+    }
+
+    // Section header: line ending with : or ALL CAPS or starting with ---
+    if(trimmed.startsWith('---')){closeLists();html+='<hr style="border:none;border-top:1px solid rgba(255,255,255,.08);margin:8px 0"/>';return;}
+    if(/^[A-Z][A-Z\s&\/\-:]{4,}:?\s*$/.test(trimmed)||trimmed.endsWith(':')){
+      closeLists();
+      html+=`<div style="font-size:10px;font-weight:700;color:rgba(255,255,255,.4);letter-spacing:.07em;text-transform:uppercase;margin:10px 0 4px">${esc(trimmed.replace(/:$/,''))}</div>`;
+      return;
+    }
+
+    // Regular paragraph
+    closeLists();
+    html+=`<p style="color:rgba(255,255,255,.7);font-size:12.5px;line-height:1.7;margin:2px 0">${formatInline(trimmed)}</p>`;
+  });
+
+  closeLists();
+  return html;
+}
+
+function formatInline(text){
+  return text
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/\*\*(.+?)\*\*/g,'<strong style="color:#e2e8f0;font-weight:700">$1</strong>')
+    .replace(/\*(.+?)\*/g,'<em style="color:rgba(255,255,255,.8)">$1</em>')
+    .replace(/`(.+?)`/g,'<code style="font-family:monospace;font-size:11.5px;background:rgba(255,255,255,.08);padding:1px 5px;border-radius:4px;color:#a5b4fc">$1</code>');
 }
 
 // Keyboard shortcut
