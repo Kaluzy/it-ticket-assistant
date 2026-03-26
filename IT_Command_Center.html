@@ -147,7 +147,17 @@ textarea.inp{resize:vertical;min-height:88px;line-height:1.6}
   .mnav-btn{padding:10px 4px}
 }
 </style>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<!-- Supabase loads async — never blocks the app -->
+<script>
+(function(){
+  var s=document.createElement('script');
+  s.src='https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js';
+  s.async=true;
+  s.onload=function(){window._supaLoaded=true;if(typeof initAuth==='function')initAuth();};
+  s.onerror=function(){console.warn('Supabase offline — running in local mode');};
+  document.head.appendChild(s);
+})();
+</script>
 </head>
 <body>
 
@@ -1022,10 +1032,11 @@ function checkApiKeyAndBoot(){
 
 window.addEventListener('DOMContentLoaded',()=>{
   document.getElementById('dashDate').textContent=new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
-  // Boot the app immediately — never block on Supabase
+  // Boot immediately — Supabase loading never delays this
   checkApiKeyAndBoot();
-  // Auth + sync run silently in background
-  setTimeout(initAuth,500);
+  // initAuth() is called by the Supabase script onload event above
+  // If Supabase already loaded (cached), call it now
+  if(window._supaLoaded)initAuth();
 });
 
 async function pasteKey(fieldId){
