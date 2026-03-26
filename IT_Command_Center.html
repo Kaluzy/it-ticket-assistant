@@ -2043,15 +2043,15 @@ sfc /scannow`},
 DISM /Online /Cleanup-Image /RestoreHealth`},
   {id:'w3',cat:'Windows',shell:'ps',title:'Windows Update Reset',desc:'Clears Windows Update cache and resets the service. Fixes stuck updates.',code:`# Run as Administrator
 Stop-Service wuauserv,bits,cryptsvc -Force
-Remove-Item "$env:SystemRoot\\SoftwareDistribution" -Recurse -Force -ErrorAction SilentlyContinue
-Remove-Item "$env:SystemRoot\\System32\\catroot2" -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item "\$env:SystemRoot\\\\SoftwareDistribution" -Recurse -Force -ErrorAction SilentlyContinue
+Remove-Item "\$env:SystemRoot\\\\System32\\\\catroot2" -Recurse -Force -ErrorAction SilentlyContinue
 Start-Service cryptsvc,bits,wuauserv
 Write-Host "Windows Update reset complete." -ForegroundColor Green`},
   {id:'w4',cat:'Windows',shell:'ps',title:'Check Windows Activation Status',desc:'Shows current Windows activation and license type.',code:`slmgr /xpr
-Get-WmiObject SoftwareLicensingProduct | Where-Object {$_.PartialProductKey} | Select Name,LicenseStatus`},
+Get-WmiObject SoftwareLicensingProduct | Where-Object {\$_.PartialProductKey} | Select Name,LicenseStatus`},
   {id:'w5',cat:'Windows',shell:'ps',title:'Repair Windows Store Apps',desc:'Re-registers all built-in Windows apps (fixes Teams, Store, etc.).',code:`# Run as Administrator
 Get-AppXPackage -AllUsers | ForEach-Object {
-  Add-AppxPackage -DisableDevelopmentMode -Register "$($_.InstallLocation)\AppXManifest.xml" -ErrorAction SilentlyContinue
+  Add-AppxPackage -DisableDevelopmentMode -Register "\$(\$_.InstallLocation)\\AppXManifest.xml" -ErrorAction SilentlyContinue
 }
 Write-Host "App re-registration complete." -ForegroundColor Green`},
 
@@ -2060,11 +2060,11 @@ Write-Host "App re-registration complete." -ForegroundColor Green`},
   Select DeviceName,DriverVersion,DriverDate,Manufacturer |
   Sort DeviceName | Format-Table -AutoSize`},
   {id:'d2',cat:'Drivers',shell:'ps',title:'Check for Driver Issues (Problem Devices)',desc:'Lists devices with driver errors or warnings in Device Manager.',code:`Get-WmiObject Win32_PnPEntity |
-  Where-Object {$_.ConfigManagerErrorCode -ne 0} |
+  Where-Object {\$_.ConfigManagerErrorCode -ne 0} |
   Select Name,ConfigManagerErrorCode,DeviceID`},
   {id:'d3',cat:'Drivers',shell:'cmd',title:'Export Full Driver Backup',desc:'Backs up all third-party drivers to a folder for reimaging.',code:`:: Run as Administrator
-pnputil /export-driver * C:\DriverBackup
-echo Driver backup saved to C:\DriverBackup`},
+pnputil /export-driver * C:\\DriverBackup
+echo Driver backup saved to C:\\DriverBackup`},
   {id:'d4',cat:'Drivers',shell:'ps',title:'Lenovo System Update via WinGet',desc:'Installs/updates Lenovo System Update and Vantage via WinGet.',code:`winget install Lenovo.SystemUpdate --silent --accept-package-agreements --accept-source-agreements
 winget upgrade --all --silent --accept-package-agreements`},
 
@@ -2079,70 +2079,70 @@ netsh int tcp reset
 echo Network reset complete — RESTART REQUIRED`},
   {id:'n2',cat:'Network',shell:'ps',title:'Network Diagnostics Snapshot',desc:'Dumps IP config, DNS, routes, and open connections to screen.',code:`Write-Host "=== IP CONFIG ===" -ForegroundColor Cyan
 ipconfig /all
-Write-Host "`n=== DNS CACHE ===" -ForegroundColor Cyan
+Write-Host "\`n=== DNS CACHE ===" -ForegroundColor Cyan
 Get-DnsClientCache | Format-Table -AutoSize
-Write-Host "`n=== ROUTING TABLE ===" -ForegroundColor Cyan
+Write-Host "\`n=== ROUTING TABLE ===" -ForegroundColor Cyan
 route print
-Write-Host "`n=== ACTIVE CONNECTIONS ===" -ForegroundColor Cyan
+Write-Host "\`n=== ACTIVE CONNECTIONS ===" -ForegroundColor Cyan
 netstat -an | Select-String "ESTABLISHED|LISTENING"`},
-  {id:'n3',cat:'Network',shell:'ps',title:'Test Network Connectivity',desc:'Pings key endpoints to check internet, DNS, and internal network.',code:`$targets = @("8.8.8.8","google.com","microsoft.com","portal.office.com")
-foreach ($t in $targets) {
-  $result = Test-Connection $t -Count 2 -Quiet
-  Write-Host "$t : $(if($result){'OK ✓'}else{'FAIL ✗'})" -ForegroundColor $(if($result){'Green'}else{'Red'})
+  {id:'n3',cat:'Network',shell:'ps',title:'Test Network Connectivity',desc:'Pings key endpoints to check internet, DNS, and internal network.',code:`\$targets = @("8.8.8.8","google.com","microsoft.com","portal.office.com")
+foreach (\$t in \$targets) {
+  \$result = Test-Connection \$t -Count 2 -Quiet
+  Write-Host "\$t : \$(if(\$result){'OK ✓'}else{'FAIL ✗'})" -ForegroundColor \$(if(\$result){'Green'}else{'Red'})
 }`},
   {id:'n4',cat:'Network',shell:'ps',title:'Disable/Enable Network Adapter',desc:'Restarts the primary network adapter to resolve connection glitches.',code:`# Run as Administrator
-$adapter = Get-NetAdapter | Where-Object {$_.Status -eq "Up"} | Select-Object -First 1
-Disable-NetAdapter -Name $adapter.Name -Confirm:$false
+\$adapter = Get-NetAdapter | Where-Object {\$_.Status -eq "Up"} | Select-Object -First 1
+Disable-NetAdapter -Name \$adapter.Name -Confirm:\$false
 Start-Sleep -Seconds 3
-Enable-NetAdapter -Name $adapter.Name -Confirm:$false
-Write-Host "Adapter '$($adapter.Name)' restarted." -ForegroundColor Green`},
+Enable-NetAdapter -Name \$adapter.Name -Confirm:\$false
+Write-Host "Adapter '\$(\$adapter.Name)' restarted." -ForegroundColor Green`},
   {id:'n5',cat:'Network',shell:'ps',title:'Set Static DNS (Google / Cloudflare)',desc:'Sets DNS to Google (8.8.8.8) and Cloudflare (1.1.1.1) on all adapters.',code:`# Run as Administrator
-$adapters = Get-NetAdapter | Where-Object {$_.Status -eq "Up"}
-foreach ($a in $adapters) {
-  Set-DnsClientServerAddress -InterfaceIndex $a.ifIndex -ServerAddresses ("8.8.8.8","1.1.1.1")
+\$adapters = Get-NetAdapter | Where-Object {\$_.Status -eq "Up"}
+foreach (\$a in \$adapters) {
+  Set-DnsClientServerAddress -InterfaceIndex \$a.ifIndex -ServerAddresses ("8.8.8.8","1.1.1.1")
 }
 Write-Host "DNS updated on all active adapters." -ForegroundColor Green`},
 
   // ── Printers ──
   {id:'p1',cat:'Printers',shell:'cmd',title:'Reset Print Spooler',desc:'Stops spooler, clears stuck jobs, restarts. Fixes most printing issues.',code:`:: Run as Administrator
 net stop spooler
-del /Q /F /S "%systemroot%\System32\spool\PRINTERS\*.*"
+del /Q /F /S "%systemroot%\\System32\\spool\\PRINTERS\\*.*"
 net start spooler
 echo Print spooler cleared and restarted.`},
   {id:'p2',cat:'Printers',shell:'ps',title:'List All Installed Printers',desc:'Shows all printers, their status, port, and driver.',code:`Get-Printer | Select Name,DriverName,PortName,PrinterStatus | Format-Table -AutoSize`},
   {id:'p3',cat:'Printers',shell:'ps',title:'Remove All Printers & Reinstall',desc:'Removes all non-system printers. Use before adding fresh via print server.',code:`# Run as Administrator
-Get-Printer | Where-Object {$_.Type -ne "Local"} | ForEach-Object {
-  Write-Host "Removing: $($_.Name)"
-  Remove-Printer -Name $_.Name -ErrorAction SilentlyContinue
+Get-Printer | Where-Object {\$_.Type -ne "Local"} | ForEach-Object {
+  Write-Host "Removing: \$(\$_.Name)"
+  Remove-Printer -Name \$_.Name -ErrorAction SilentlyContinue
 }
 Write-Host "All network printers removed." -ForegroundColor Yellow`},
 
   // ── Office & Teams ──
   {id:'o1',cat:'Office / Teams',shell:'cmd',title:'Clear Microsoft Teams Cache',desc:'Deletes all Teams cache files. Fixes login loops, missing messages, blank screens.',code:`:: Close Teams first
 taskkill /F /IM Teams.exe /T
-rd /s /q "%APPDATA%\Microsoft\Teams\Cache"
-rd /s /q "%APPDATA%\Microsoft\Teams\blob_storage"
-rd /s /q "%APPDATA%\Microsoft\Teams\databases"
-rd /s /q "%APPDATA%\Microsoft\Teams\GPUcache"
-rd /s /q "%APPDATA%\Microsoft\Teams\IndexedDB"
-rd /s /q "%APPDATA%\Microsoft\Teams\Local Storage"
-rd /s /q "%APPDATA%\Microsoft\Teams\tmp"
+rd /s /q "%APPDATA%\\Microsoft\\Teams\\Cache"
+rd /s /q "%APPDATA%\\Microsoft\\Teams\\blob_storage"
+rd /s /q "%APPDATA%\\Microsoft\\Teams\\databases"
+rd /s /q "%APPDATA%\\Microsoft\\Teams\\GPUcache"
+rd /s /q "%APPDATA%\\Microsoft\\Teams\\IndexedDB"
+rd /s /q "%APPDATA%\\Microsoft\\Teams\\Local Storage"
+rd /s /q "%APPDATA%\\Microsoft\\Teams\\tmp"
 echo Teams cache cleared — relaunch Teams`},
   {id:'o2',cat:'Office / Teams',shell:'ps',title:'Repair Microsoft Office (Online)',desc:'Runs Online Repair for Office 365 / Microsoft 365 apps.',code:`# Run as Administrator
-$officeReg = Get-ChildItem "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall" |
-  Where-Object {$_.GetValue("DisplayName") -like "*Microsoft 365*" -or $_.GetValue("DisplayName") -like "*Office*"} |
+\$officeReg = Get-ChildItem "HKLM:\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall" |
+  Where-Object {\$_.GetValue("DisplayName") -like "*Microsoft 365*" -or \$_.GetValue("DisplayName") -like "*Office*"} |
   Select-Object -First 1
-if ($officeReg) {
-  $uninstallStr = $officeReg.GetValue("UninstallString")
-  Write-Host "Found: $($officeReg.GetValue('DisplayName'))"
+if (\$officeReg) {
+  \$uninstallStr = \$officeReg.GetValue("UninstallString")
+  Write-Host "Found: \$(\$officeReg.GetValue('DisplayName'))"
   Start-Process "control.exe" "/name Microsoft.ProgramsAndFeatures"
 } else {
   Write-Host "Office not found in registry. Check Apps & Features manually." -ForegroundColor Yellow
 }`},
   {id:'o3',cat:'Office / Teams',shell:'ps',title:'Reset Outlook Profile',desc:'Removes corrupt Outlook profile (user must reconfigure). Last resort for Outlook issues.',code:`# Run as Administrator — user will lose saved Outlook settings
-$profilePath = "HKCU:\Software\Microsoft\Office\16.0\Outlook\Profiles"
-if (Test-Path $profilePath) {
-  Remove-Item $profilePath -Recurse -Force
+\$profilePath = "HKCU:\\Software\\Microsoft\\Office\\16.0\\Outlook\\Profiles"
+if (Test-Path \$profilePath) {
+  Remove-Item \$profilePath -Recurse -Force
   Write-Host "Outlook profiles removed. Outlook will ask to create a new profile." -ForegroundColor Green
 } else {
   Write-Host "No Outlook 2016/365 profiles found." -ForegroundColor Yellow
@@ -2151,50 +2151,50 @@ if (Test-Path $profilePath) {
   // ── Intune / MDM ──
   {id:'i1',cat:'Intune / MDM',shell:'ps',title:'Check Intune Enrollment Status',desc:'Shows AAD join status, MDM enrollment URL, and compliance state.',code:`dsregcmd /status | Select-String "AzureAdJoined|DomainJoined|MDMUrl|EnterpriseJoined|WorkplaceJoined"`},
   {id:'i2',cat:'Intune / MDM',shell:'ps',title:'Force Intune Sync',desc:'Triggers an immediate Intune policy/app sync without waiting for scheduled check-in.',code:`# Run as Administrator
-$session = New-Object -ComObject Microsoft.CCM.DCM
+\$session = New-Object -ComObject Microsoft.CCM.DCM
 Invoke-Command {
-  $enrollmentPath = "HKLM:\SOFTWARE\Microsoft\Enrollments"
-  $enrollmentId = (Get-ChildItem $enrollmentPath | Where-Object {(Get-ItemProperty $_.PSPath).ProviderID -eq "MS DM Server"}).PSChildName
-  if ($enrollmentId) {
-    $syncUri = "ms-settings:workplace"
-    Write-Host "Enrollment ID: $enrollmentId"
+  \$enrollmentPath = "HKLM:\\SOFTWARE\\Microsoft\\Enrollments"
+  \$enrollmentId = (Get-ChildItem \$enrollmentPath | Where-Object {(Get-ItemProperty \$_.PSPath).ProviderID -eq "MS DM Server"}).PSChildName
+  if (\$enrollmentId) {
+    \$syncUri = "ms-settings:workplace"
+    Write-Host "Enrollment ID: \$enrollmentId"
     Write-Host "Triggering sync via DeviceEnroller..."
     Start-Process "ms-settings:workplace"
   }
 }`},
   {id:'i3',cat:'Intune / MDM',shell:'ps',title:'Re-enroll Device in Intune',desc:'Forces MDM re-enrollment. Use when device shows as non-compliant or unenrolled.',code:`# Run as Administrator — triggers re-enrollment
-$task = "\Microsoft\Windows\EnterpriseMgmt\*"
-Get-ScheduledTask -TaskPath $task | Start-ScheduledTask
+\$task = "\\Microsoft\\Windows\\EnterpriseMgmt\\*"
+Get-ScheduledTask -TaskPath \$task | Start-ScheduledTask
 Write-Host "MDM enrollment tasks triggered. Check Intune portal in 15 min." -ForegroundColor Green`},
   {id:'i4',cat:'Intune / MDM',shell:'cmd',title:'Check AAD Device Join',desc:'Displays device Azure AD join details and token status.',code:`dsregcmd /status`},
 
   // ── User / Profile ──
   {id:'u1',cat:'User / Profile',shell:'ps',title:'List Local User Accounts',desc:'Shows all local accounts, their status, and last logon time.',code:`Get-LocalUser | Select Name,Enabled,LastLogon,PasswordLastSet | Format-Table -AutoSize`},
   {id:'u2',cat:'User / Profile',shell:'ps',title:'Force User Password Reset (Local)',desc:'Resets a local account password. Swap username and new password.',code:`# Run as Administrator
-$username = "USERNAME_HERE"
-$newPassword = ConvertTo-SecureString "NewPassword123!" -AsPlainText -Force
-Set-LocalUser -Name $username -Password $newPassword
-Write-Host "Password reset for $username" -ForegroundColor Green`},
+\$username = "USERNAME_HERE"
+\$newPassword = ConvertTo-SecureString "NewPassword123!" -AsPlainText -Force
+Set-LocalUser -Name \$username -Password \$newPassword
+Write-Host "Password reset for \$username" -ForegroundColor Green`},
   {id:'u3',cat:'User / Profile',shell:'ps',title:'Clear Credential Manager',desc:'Removes stored Windows and web credentials. Fixes repeated sign-in prompts.',code:`# Remove all stored Windows credentials
 cmdkey /list | ForEach-Object {
-  if ($_ -match "Target: (.+)") {
-    cmdkey /delete:$($Matches[1])
-    Write-Host "Removed: $($Matches[1])"
+  if (\$_ -match "Target: (.+)") {
+    cmdkey /delete:\$(\$Matches[1])
+    Write-Host "Removed: \$(\$Matches[1])"
   }
 }
 Write-Host "Credential Manager cleared." -ForegroundColor Green`},
 
   // ── Performance ──
   {id:'perf1',cat:'Performance',shell:'ps',title:'System Health Snapshot',desc:'CPU, RAM, disk usage and top processes at a glance.',code:`Write-Host "=== CPU & RAM ===" -ForegroundColor Cyan
-Get-WmiObject Win32_OperatingSystem | Select @{N="FreeRAM_GB";E={[math]::Round($_.FreePhysicalMemory/1MB,2)}},@{N="TotalRAM_GB";E={[math]::Round($_.TotalVisibleMemorySize/1MB,2)}}
-Write-Host "`n=== Top 10 CPU Processes ===" -ForegroundColor Cyan
-Get-Process | Sort CPU -Descending | Select -First 10 Name,CPU,@{N="RAM_MB";E={[math]::Round($_.WorkingSet64/1MB,1)}} | Format-Table -AutoSize
-Write-Host "`n=== Disk Usage ===" -ForegroundColor Cyan
-Get-PSDrive -PSProvider FileSystem | Select Name,@{N="Used_GB";E={[math]::Round($_.Used/1GB,1)}},@{N="Free_GB";E={[math]::Round($_.Free/1GB,1)}} | Format-Table -AutoSize`},
+Get-WmiObject Win32_OperatingSystem | Select @{N="FreeRAM_GB";E={[math]::Round(\$_.FreePhysicalMemory/1MB,2)}},@{N="TotalRAM_GB";E={[math]::Round(\$_.TotalVisibleMemorySize/1MB,2)}}
+Write-Host "\`n=== Top 10 CPU Processes ===" -ForegroundColor Cyan
+Get-Process | Sort CPU -Descending | Select -First 10 Name,CPU,@{N="RAM_MB";E={[math]::Round(\$_.WorkingSet64/1MB,1)}} | Format-Table -AutoSize
+Write-Host "\`n=== Disk Usage ===" -ForegroundColor Cyan
+Get-PSDrive -PSProvider FileSystem | Select Name,@{N="Used_GB";E={[math]::Round(\$_.Used/1GB,1)}},@{N="Free_GB";E={[math]::Round(\$_.Free/1GB,1)}} | Format-Table -AutoSize`},
   {id:'perf2',cat:'Performance',shell:'cmd',title:'Disk Cleanup (Silent)',desc:'Runs Disk Cleanup on C: silently, removes temp files, recycle bin, etc.',code:`:: Run as Administrator
 cleanmgr /sagerun:1
-del /q /f /s %TEMP%\*
-del /q /f /s C:\Windows\Temp\*
+del /q /f /s %TEMP%\\*
+del /q /f /s C:\\Windows\\Temp\\*
 echo Temp files cleared.`},
   {id:'perf3',cat:'Performance',shell:'ps',title:'Disable Startup Apps (List)',desc:'Lists all startup programs so you can identify slow-boot culprits.',code:`Get-CimInstance Win32_StartupCommand | Select Name,Command,Location,User | Format-Table -AutoSize`},
   {id:'perf4',cat:'Performance',shell:'ps',title:'Check & Fix Disk Errors',desc:'Runs CHKDSK on C: at next reboot to fix file system errors.',code:`# Run as Administrator
