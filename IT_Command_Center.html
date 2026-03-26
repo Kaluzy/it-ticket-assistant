@@ -147,12 +147,37 @@ textarea.inp{resize:vertical;min-height:88px;line-height:1.6}
   .mnav-btn{padding:10px 4px}
 }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
 <div class="bg-grid"></div>
 <div class="bg-orb1"></div>
 <div class="bg-orb2"></div>
+
+<!-- ═══ AUTH MODAL ═══ -->
+<div id="authModal" class="modal-overlay" style="display:none;align-items:center!important;padding:16px!important">
+  <div class="modal-box" style="max-width:420px;border-radius:18px!important;max-height:92dvh;overflow-y:auto">
+    <div style="text-align:center;margin-bottom:22px">
+      <div style="width:52px;height:52px;background:linear-gradient(135deg,#0891b2,#2563eb);border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:22px;box-shadow:0 0 28px rgba(8,145,178,.5)">☁️</div>
+      <h1 style="font-size:20px;font-weight:800;margin-bottom:5px" class="grad-text">Sync Across Devices</h1>
+      <p style="font-size:12px;color:rgba(255,255,255,.4);line-height:1.5">Your tickets, queue &amp; KB — everywhere you work</p>
+    </div>
+    <div style="display:flex;gap:6px;margin-bottom:18px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:4px">
+      <button id="authTab-in" onclick="switchAuthTab('in')" style="flex:1;padding:9px;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;border:none;background:rgba(59,130,246,.2);color:#93c5fd;transition:all .15s">Sign In</button>
+      <button id="authTab-up" onclick="switchAuthTab('up')" style="flex:1;padding:9px;border-radius:7px;font-size:12px;font-weight:700;cursor:pointer;border:none;background:transparent;color:rgba(255,255,255,.4);transition:all .15s">Create Account</button>
+    </div>
+    <label style="font-size:11px;font-weight:700;color:rgba(255,255,255,.4);letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:7px">Work Email</label>
+    <input class="inp" type="email" id="authEmail" placeholder="you@maximhealthcare.com" autocomplete="email" style="margin-bottom:12px"/>
+    <label style="font-size:11px;font-weight:700;color:rgba(255,255,255,.4);letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:7px">Password</label>
+    <input class="inp" type="password" id="authPass" placeholder="••••••••" autocomplete="current-password" style="margin-bottom:6px" onkeydown="if(event.key==='Enter')submitAuth()"/>
+    <p id="authStatus" style="font-size:12px;min-height:18px;margin-bottom:14px;color:rgba(255,255,255,.4)"></p>
+    <button id="authSubmitBtn" class="btn-glow" style="width:100%;padding:13px;border-radius:10px;font-size:15px;font-weight:700;color:#fff;margin-bottom:14px" onclick="submitAuth()">Sign In →</button>
+    <div style="text-align:center;border-top:1px solid rgba(255,255,255,.06);padding-top:14px">
+      <button onclick="skipAuth()" style="background:none;border:none;color:rgba(255,255,255,.28);font-size:12px;cursor:pointer;text-decoration:underline">Skip — use this device only</button>
+    </div>
+  </div>
+</div>
 
 <!-- ═══ SETUP MODAL ═══ -->
 <div id="setupModal" class="modal-overlay" style="align-items:center!important;padding:16px!important">
@@ -299,6 +324,20 @@ textarea.inp{resize:vertical;min-height:88px;line-height:1.6}
       <div class="pulsed green"></div>
       <span style="color:rgba(255,255,255,.4)">API Connected</span>
     </div>
+    <!-- Sync status (shown when logged in) -->
+    <div id="syncDot" style="display:none;align-items:center;gap:5px;font-size:11px;font-weight:600;color:rgba(34,197,94,.7)">
+      <svg id="syncIcon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="20 6 9 17 4 12"/></svg>
+      <span id="syncStatus">Synced</span>
+    </div>
+    <!-- User avatar (shown when logged in) -->
+    <div id="userBadge" title="Click to sign out" onclick="openUserMenu()" style="display:none;align-items:center;gap:6px;cursor:pointer;padding:3px 8px;border-radius:8px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);transition:all .15s" onmouseover="this.style.background='rgba(255,255,255,.09)'" onmouseout="this.style.background='rgba(255,255,255,.05)'">
+      <div id="userAvatar" style="width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg,#2563eb,#0891b2);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;flex-shrink:0">?</div>
+      <span id="userEmailShort" style="font-size:10.5px;color:rgba(255,255,255,.5);max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
+    </div>
+    <!-- Sign in button (shown when not logged in) -->
+    <button id="signInHeaderBtn" onclick="showAuthModal()" class="btn-sm" style="display:none;align-items:center;gap:5px;border-color:rgba(59,130,246,.3);color:#93c5fd;font-size:10.5px">
+      ☁ Sync
+    </button>
     <button onclick="openSettings()" class="btn-sm" style="display:flex;align-items:center;gap:5px">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
       Settings
@@ -947,15 +986,15 @@ function setGoogleModel(v){localStorage.setItem('itc_gm',v)}
 function getProvider(){return localStorage.getItem('itc_prov')||'or'}
 function setProvider(v){localStorage.setItem('itc_prov',v)}
 function getTickets(){try{return JSON.parse(localStorage.getItem('itc_t')||'[]')}catch{return[]}}
-function saveTickets(a){localStorage.setItem('itc_t',JSON.stringify(a))}
+function saveTickets(a){localStorage.setItem('itc_t',JSON.stringify(a));bgSync();}
 function getQueue(){try{return JSON.parse(localStorage.getItem('itc_q')||'{"new":[],"active":[],"hold":[],"tbx":[]}')}catch{return{new:[],active:[],hold:[],tbx:[]}}}
-function saveQueue(q){localStorage.setItem('itc_q',JSON.stringify(q))}
+function saveQueue(q){localStorage.setItem('itc_q',JSON.stringify(q));bgSync();}
 function uuid(){return Date.now().toString(36)+Math.random().toString(36).slice(2)}
 
 // ══════════════════════════════════════════
 //  INIT
 // ══════════════════════════════════════════
-window.addEventListener('DOMContentLoaded',()=>{
+function checkApiKeyAndBoot(){
   const hasKey=getKey()||(getProvider()==='google'&&getGoogleKey());
   if(hasKey){
     document.getElementById('setupModal').style.display='none';
@@ -963,7 +1002,11 @@ window.addEventListener('DOMContentLoaded',()=>{
   }else{
     document.getElementById('setupModal').style.display='flex';
   }
+}
+
+window.addEventListener('DOMContentLoaded',()=>{
   document.getElementById('dashDate').textContent=new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  initAuth();
 });
 
 async function pasteKey(fieldId){
@@ -2139,7 +2182,7 @@ let SCRIPT_CAT_FILTER='All';
 function getCustomScripts(){
   try{return JSON.parse(localStorage.getItem('itc_custom_scripts')||'[]');}catch{return[];}
 }
-function saveCustomScripts(arr){localStorage.setItem('itc_custom_scripts',JSON.stringify(arr));}
+function saveCustomScripts(arr){localStorage.setItem('itc_custom_scripts',JSON.stringify(arr));bgSync();}
 
 function renderScripts(){
   const query=(document.getElementById('scriptSearch')||{value:''}).value.toLowerCase();
@@ -2319,7 +2362,7 @@ function closeCardDetail(){document.getElementById('cardDetailModal').style.disp
 //  KNOWLEDGE BASE
 // ══════════════════════════════════════════
 function getKb(){try{return JSON.parse(localStorage.getItem('itc_kb')||'[]');}catch{return[];}}
-function saveKb(arr){localStorage.setItem('itc_kb',JSON.stringify(arr));}
+function saveKb(arr){localStorage.setItem('itc_kb',JSON.stringify(arr));bgSync();}
 
 function openAddKb(prefill){
   document.getElementById('kbEditId').value='';
@@ -2472,6 +2515,229 @@ function initKbSuggestions(){
         <div style="font-size:10.5px;color:rgba(255,255,255,.35)">${esc(a.cat)} ${a.time?'· '+a.time:''}</div>
       </div>`).join('');
   });
+}
+
+// ══════════════════════════════════════════
+//  SUPABASE AUTH + SYNC
+// ══════════════════════════════════════════
+const SUPA_URL='https://vtukfewprcfynoycnmrn.supabase.co';
+const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ0dWtmZXdwcmNmeW5veWNubXJuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1MjE1MTcsImV4cCI6MjA5MDA5NzUxN30.FxClkhq83qVa7_lgrq6f-4iKL7qM-NBD10hfHuVfFm4';
+let _supa=null;
+let currentUser=null;
+let _syncTimer=null;
+
+function getSupa(){
+  if(!_supa&&window.supabase){
+    _supa=window.supabase.createClient(SUPA_URL,SUPA_KEY);
+  }
+  return _supa;
+}
+
+async function initAuth(){
+  try{
+    const sb=getSupa();
+    if(!sb){checkApiKeyAndBoot();return;}
+    const{data:{session}}=await sb.auth.getSession();
+    if(session){
+      currentUser=session.user;
+      updateUserUI();
+      await syncFromSupabase();
+    }else{
+      // Show sign-in header button (non-blocking)
+      const btn=document.getElementById('signInHeaderBtn');
+      if(btn)btn.style.display='flex';
+    }
+    sb.auth.onAuthStateChange(async(event,session)=>{
+      if(event==='SIGNED_IN'){
+        currentUser=session.user;
+        updateUserUI();
+        await syncFromSupabase();
+        if(document.getElementById('mainApp').style.display!=='none')renderDashboard();
+      }else if(event==='SIGNED_OUT'){
+        currentUser=null;
+        updateUserUI();
+      }
+    });
+  }catch(e){
+    console.warn('Supabase init:',e);
+  }
+  checkApiKeyAndBoot();
+}
+
+// ── Auth modal helpers ──
+let _authMode='in';
+function switchAuthTab(tab){
+  _authMode=tab;
+  ['in','up'].forEach(t=>{
+    const btn=document.getElementById('authTab-'+t);
+    if(btn){
+      btn.style.background=t===tab?'rgba(59,130,246,.2)':'transparent';
+      btn.style.color=t===tab?'#93c5fd':'rgba(255,255,255,.4)';
+    }
+  });
+  const submitBtn=document.getElementById('authSubmitBtn');
+  if(submitBtn)submitBtn.textContent=tab==='in'?'Sign In →':'Create Account →';
+  const passEl=document.getElementById('authPass');
+  if(passEl)passEl.autocomplete=tab==='in'?'current-password':'new-password';
+  document.getElementById('authStatus').textContent='';
+}
+
+function showAuthModal(){
+  document.getElementById('authModal').style.display='flex';
+}
+
+function skipAuth(){
+  document.getElementById('authModal').style.display='none';
+  checkApiKeyAndBoot();
+}
+
+async function submitAuth(){
+  const sb=getSupa();if(!sb)return;
+  const email=(document.getElementById('authEmail').value||'').trim();
+  const pass=(document.getElementById('authPass').value||'').trim();
+  const statusEl=document.getElementById('authStatus');
+  const btn=document.getElementById('authSubmitBtn');
+  if(!email||!pass){statusEl.textContent='Enter your email and password.';statusEl.style.color='#fca5a5';return;}
+  btn.disabled=true;
+  btn.innerHTML='<span class="spinner" style="display:inline-block"></span>';
+  statusEl.textContent='';
+  try{
+    if(_authMode==='in'){
+      const{data,error}=await sb.auth.signInWithPassword({email,password:pass});
+      if(error)throw error;
+      document.getElementById('authModal').style.display='none';
+      currentUser=data.user;
+      updateUserUI();
+      await syncFromSupabase();
+      checkApiKeyAndBoot();
+      toast('Signed in — data synced ☁️','success');
+    }else{
+      const{data,error}=await sb.auth.signUp({email,password:pass});
+      if(error)throw error;
+      if(data.user&&!data.session){
+        statusEl.textContent='✓ Check your email to confirm your account, then sign in.';
+        statusEl.style.color='#86efac';
+        switchAuthTab('in');
+      }else if(data.session){
+        document.getElementById('authModal').style.display='none';
+        currentUser=data.user;
+        updateUserUI();
+        await syncFromSupabase();
+        checkApiKeyAndBoot();
+        toast('Account created & signed in ☁️','success');
+      }
+    }
+  }catch(e){
+    statusEl.textContent='⚠ '+(e.message||'Auth failed. Try again.');
+    statusEl.style.color='#fca5a5';
+  }finally{
+    btn.disabled=false;
+    btn.textContent=_authMode==='in'?'Sign In →':'Create Account →';
+  }
+}
+
+async function doSignOut(){
+  const sb=getSupa();if(!sb)return;
+  await sb.auth.signOut();
+  currentUser=null;
+  updateUserUI();
+  toast('Signed out — data stays local until next sign in','success');
+}
+
+function openUserMenu(){
+  if(!currentUser)return;
+  const email=currentUser.email||'';
+  if(confirm('Signed in as:\n'+email+'\n\nSign out?'))doSignOut();
+}
+
+function updateUserUI(){
+  const badge=document.getElementById('userBadge');
+  const signInBtn=document.getElementById('signInHeaderBtn');
+  const syncDot=document.getElementById('syncDot');
+  const avatar=document.getElementById('userAvatar');
+  const emailShort=document.getElementById('userEmailShort');
+  if(currentUser){
+    if(badge)badge.style.display='flex';
+    if(signInBtn)signInBtn.style.display='none';
+    if(syncDot)syncDot.style.display='flex';
+    if(avatar)avatar.textContent=(currentUser.email||'U')[0].toUpperCase();
+    if(emailShort)emailShort.textContent=(currentUser.email||'').split('@')[0];
+  }else{
+    if(badge)badge.style.display='none';
+    if(signInBtn)signInBtn.style.display='flex';
+    if(syncDot)syncDot.style.display='none';
+  }
+}
+
+// ── Sync ──
+function setSyncStatus(state){
+  const icon=document.getElementById('syncIcon');
+  const text=document.getElementById('syncStatus');
+  const dot=document.getElementById('syncDot');
+  if(!text)return;
+  if(state==='synced'){
+    text.textContent='Synced';
+    if(dot)dot.style.color='rgba(34,197,94,.7)';
+    if(icon)icon.innerHTML='<polyline points="20 6 9 17 4 12"/>';
+  }else if(state==='syncing'){
+    text.textContent='Syncing…';
+    if(dot)dot.style.color='rgba(245,158,11,.7)';
+    if(icon)icon.innerHTML='<polyline points="1 4 1 10 7 10"/><polyline points="23 20 23 14 17 14"/><path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/>';
+  }else if(state==='error'){
+    text.textContent='Sync error';
+    if(dot)dot.style.color='rgba(239,68,68,.7)';
+  }
+}
+
+async function syncFromSupabase(){
+  const sb=getSupa();if(!sb||!currentUser)return;
+  setSyncStatus('syncing');
+  try{
+    const{data,error}=await sb.from('user_data').select('*').eq('user_id',currentUser.id).single();
+    if(error&&error.code!=='PGRST116')throw error;
+    if(data){
+      // Hydrate localStorage from cloud
+      if(data.tickets)localStorage.setItem('itc_t',JSON.stringify(data.tickets));
+      if(data.queue)localStorage.setItem('itc_q',JSON.stringify(data.queue));
+      if(data.kb)localStorage.setItem('itc_kb',JSON.stringify(data.kb));
+      if(data.scripts)localStorage.setItem('itc_custom_scripts',JSON.stringify(data.scripts));
+      setSyncStatus('synced');
+    }else{
+      // First time this user logs in — push existing local data up
+      await pushToSupabase();
+    }
+  }catch(e){
+    console.warn('syncFromSupabase:',e);
+    setSyncStatus('error');
+  }
+}
+
+async function pushToSupabase(){
+  const sb=getSupa();if(!sb||!currentUser)return;
+  setSyncStatus('syncing');
+  try{
+    const payload={
+      user_id:currentUser.id,
+      tickets:getTickets(),
+      queue:getQueue(),
+      kb:getKb(),
+      scripts:getCustomScripts(),
+      updated_at:new Date().toISOString()
+    };
+    const{error}=await sb.from('user_data').upsert(payload,{onConflict:'user_id'});
+    if(error)throw error;
+    setSyncStatus('synced');
+  }catch(e){
+    console.warn('pushToSupabase:',e);
+    setSyncStatus('error');
+  }
+}
+
+function bgSync(){
+  if(!currentUser)return; // local-only mode
+  clearTimeout(_syncTimer);
+  setSyncStatus('syncing');
+  _syncTimer=setTimeout(pushToSupabase,2500);
 }
 
 // Keyboard shortcut
