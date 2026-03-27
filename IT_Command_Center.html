@@ -494,8 +494,8 @@ textarea.inp{resize:vertical;min-height:88px;line-height:1.6}
   <input class="inp" type="text" id="tInc" placeholder="e.g. INC0123456"/>
 </div>
             <div>
-              <label style="font-size:11px;font-weight:600;color:rgba(255,255,255,.4);display:block;margin-bottom:5px">User's Name</label>
-              <input class="inp" type="text" id="tUser" placeholder="e.g. John Smith"/>
+              <label style="font-size:11px;font-weight:600;color:rgba(255,255,255,.4);display:block;margin-bottom:5px">Affected User's Name</label>
+              <input class="inp" type="text" id="tUser" placeholder="e.g. John Smith" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false"/>
             </div>
             <div>
               <label style="font-size:11px;font-weight:600;color:rgba(255,255,255,.4);display:block;margin-bottom:5px">Issue Description</label>
@@ -1012,9 +1012,10 @@ function setGoogleModel(v){localStorage.setItem('itc_gm',v)}
 function getProvider(){return localStorage.getItem('itc_prov')||'or'}
 function setProvider(v){localStorage.setItem('itc_prov',v)}
 function getTickets(){try{return JSON.parse(localStorage.getItem('itc_t')||'[]')}catch{return[]}}
-function saveTickets(a){localStorage.setItem('itc_t',JSON.stringify(a));bgSync();}
+function saveTickets(a){localStorage.setItem('itc_t',JSON.stringify(a));touchLocalSave();bgSync();}
 function getQueue(){try{return JSON.parse(localStorage.getItem('itc_q')||'{"new":[],"active":[],"hold":[],"tbx":[]}')}catch{return{new:[],active:[],hold:[],tbx:[]}}}
-function saveQueue(q){localStorage.setItem('itc_q',JSON.stringify(q));bgSync();}
+function saveQueue(q){localStorage.setItem('itc_q',JSON.stringify(q));touchLocalSave();bgSync();}
+function touchLocalSave(){localStorage.setItem('itc_local_ts',Date.now().toString());}
 function uuid(){return Date.now().toString(36)+Math.random().toString(36).slice(2)}
 
 // ══════════════════════════════════════════
@@ -2213,7 +2214,7 @@ let SCRIPT_CAT_FILTER='All';
 function getCustomScripts(){
   try{return JSON.parse(localStorage.getItem('itc_custom_scripts')||'[]');}catch{return[];}
 }
-function saveCustomScripts(arr){localStorage.setItem('itc_custom_scripts',JSON.stringify(arr));bgSync();}
+function saveCustomScripts(arr){localStorage.setItem('itc_custom_scripts',JSON.stringify(arr));touchLocalSave();bgSync();}
 
 function renderScripts(){
   const query=(document.getElementById('scriptSearch')||{value:''}).value.toLowerCase();
@@ -2393,7 +2394,7 @@ function closeCardDetail(){document.getElementById('cardDetailModal').style.disp
 //  KNOWLEDGE BASE
 // ══════════════════════════════════════════
 function getKb(){try{return JSON.parse(localStorage.getItem('itc_kb')||'[]');}catch{return[];}}
-function saveKb(arr){localStorage.setItem('itc_kb',JSON.stringify(arr));bgSync();}
+function saveKb(arr){localStorage.setItem('itc_kb',JSON.stringify(arr));touchLocalSave();bgSync();}
 
 function openAddKb(prefill){
   document.getElementById('kbEditId').value='';
@@ -2740,17 +2741,25 @@ async function syncFromSupabase(){
     const{data,error}=await sb.from('user_data').select('*').eq('user_id',currentUser.id).single();
     if(error&&error.code!=='PGRST116')throw error;
     if(data){
+      // Compare timestamps — local wins if it was saved more recently than cloud
+      const cloudTs=data.updated_at?new Date(data.updated_at).getTime():0;
+      const localTs=parseInt(localStorage.getItem('itc_local_ts')||'0');
+      if(localTs>cloudTs){
+        // Local is newer — push local up to cloud instead of pulling
+        await pushToSupabase();
+        return;
+      }
+      // Cloud is newer — pull down
       if(data.tickets)localStorage.setItem('itc_t',JSON.stringify(data.tickets));
       if(data.queue)localStorage.setItem('itc_q',JSON.stringify(data.queue));
       if(data.kb)localStorage.setItem('itc_kb',JSON.stringify(data.kb));
       if(data.scripts)localStorage.setItem('itc_custom_scripts',JSON.stringify(data.scripts));
-      // ★ Restore API keys — core of "never paste again"
-      if(data.settings?.or_key){setKey(data.settings.or_key);}
-      if(data.settings?.g_key){setGoogleKey(data.settings.g_key);}
-      if(data.settings?.provider){setProvider(data.settings.provider);}
+      if(data.settings?.or_key)setKey(data.settings.or_key);
+      if(data.settings?.g_key)setGoogleKey(data.settings.g_key);
+      if(data.settings?.provider)setProvider(data.settings.provider);
       setSyncStatus('synced');
     }else{
-      await pushToSupabase(); // first login — upload everything
+      await pushToSupabase(); // first login — push everything up
     }
   }catch(e){
     console.warn('syncFromSupabase:',e);
@@ -2773,6 +2782,7 @@ async function pushToSupabase(){
     };
     const{error}=await sb.from('user_data').upsert(payload,{onConflict:'user_id'});
     if(error)throw error;
+    localStorage.setItem('itc_local_ts',Date.now().toString());
     setSyncStatus('synced');
   }catch(e){
     console.warn('pushToSupabase:',e);
