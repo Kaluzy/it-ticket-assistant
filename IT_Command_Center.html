@@ -25,6 +25,12 @@ html,body{height:100%;font-family:'Inter',sans-serif;background:#070d1a;color:#e
 .btn-glow:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:none}
 .btn-sm{padding:6px 14px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.05);color:rgba(255,255,255,.6)}
 .btn-sm:hover{background:rgba(255,255,255,.1);color:#fff;border-color:rgba(255,255,255,.2)}
+.hold-preset{text-align:left;width:100%;padding:9px 13px;border-radius:9px;font-size:12px;font-weight:600;cursor:pointer;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);color:rgba(255,255,255,.5);transition:all .15s}
+.hold-preset:hover,.hold-preset.sel{background:rgba(245,158,11,.12);border-color:rgba(245,158,11,.3);color:#fcd34d}
+.qcard-accent-new{border-left:3px solid rgba(59,130,246,.55)!important}
+.qcard-accent-active{border-left:3px solid rgba(34,197,94,.55)!important}
+.qcard-accent-hold{border-left:3px solid rgba(245,158,11,.55)!important}
+.qcard-accent-tbx{border-left:3px solid rgba(99,102,241,.55)!important}
 .inp{width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:9px 13px;font-size:13px;color:#e2e8f0;font-family:inherit;transition:border .15s,box-shadow .15s}
 .inp::placeholder{color:rgba(255,255,255,.22)}
 .inp:focus{outline:none;border-color:rgba(59,130,246,.5);box-shadow:0 0 0 3px rgba(59,130,246,.1)}
@@ -681,10 +687,16 @@ textarea.inp{resize:vertical;min-height:88px;line-height:1.6}
 
       <!-- HISTORY VIEW -->
       <div id="view-history" style="display:none;flex:1;overflow-y:auto;padding:20px">
-        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap">
           <h2 style="font-size:17px;font-weight:800;flex:1">Ticket History</h2>
-          <input class="inp" style="max-width:260px" type="text" id="histSearch" placeholder="Search user or issue…" oninput="renderHistory()"/>
+          <input class="inp" style="max-width:220px" type="text" id="histSearch" placeholder="Search user or issue…" oninput="renderHistory()"/>
           <button onclick="clearHistory()" class="btn-sm" style="color:rgba(239,68,68,.7);border-color:rgba(239,68,68,.2);white-space:nowrap">Clear All</button>
+        </div>
+        <div style="display:flex;gap:6px;margin-bottom:14px">
+          <button id="hfAll" onclick="setHistFilter('all')" class="tab-btn on">All</button>
+          <button id="hfClosed" onclick="setHistFilter('closed')" class="tab-btn">✅ Closed</button>
+          <button id="hfKb" onclick="setHistFilter('kb')" class="tab-btn">📚 KB Saved</button>
+          <button id="hfTraining" onclick="setHistFilter('training')" class="tab-btn">🎓 Training</button>
         </div>
         <div id="histList" style="display:flex;flex-direction:column;gap:8px"></div>
       </div>
@@ -869,6 +881,28 @@ textarea.inp{resize:vertical;min-height:88px;line-height:1.6}
 </div>
 
 <!-- CLOSE TICKET MODAL -->
+<!-- HOLD REASON MODAL -->
+<div id="holdModal" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeHoldModal()">
+  <div class="modal-box" style="max-width:400px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <div>
+        <div style="font-size:10px;font-weight:700;color:rgba(245,158,11,.8);letter-spacing:.08em;text-transform:uppercase;margin-bottom:3px">⏸ Pause Work</div>
+        <h3 style="font-size:16px;font-weight:800">Put Ticket on Hold</h3>
+      </div>
+      <button onclick="closeHoldModal()" style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:5px 10px;color:rgba(255,255,255,.5);cursor:pointer;font-size:12px">✕</button>
+    </div>
+    <p style="font-size:12px;color:rgba(255,255,255,.4);margin-bottom:13px">What's blocking this ticket?</p>
+    <div style="display:flex;flex-direction:column;gap:7px;margin-bottom:13px">
+      <button onclick="selectHoldPreset(this)" class="hold-preset" data-val="Waiting for user response">⏳ Waiting for user response</button>
+      <button onclick="selectHoldPreset(this)" class="hold-preset" data-val="Waiting for parts / vendor">📦 Waiting for parts / vendor</button>
+      <button onclick="selectHoldPreset(this)" class="hold-preset" data-val="Escalated to Tier 2/3">🔼 Escalated to Tier 2/3</button>
+      <button onclick="selectHoldPreset(this)" class="hold-preset" data-val="Scheduled maintenance window">🗓 Scheduled maintenance window</button>
+    </div>
+    <input class="inp" id="holdCustomReason" placeholder="Or type a custom reason…" style="margin-bottom:13px" oninput="document.querySelectorAll('.hold-preset').forEach(b=>b.classList.remove('sel'))"/>
+    <button onclick="submitHold()" style="width:100%;padding:11px;border-radius:10px;font-size:13px;font-weight:800;background:rgba(245,158,11,.15);border:1px solid rgba(245,158,11,.3);color:#fcd34d;cursor:pointer">⏸ Put on Hold</button>
+  </div>
+</div>
+
 <div id="closeTicketModal" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeCloseModal()">
   <div class="modal-box" style="max-width:580px;max-height:92dvh;overflow-y:auto">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
@@ -1053,7 +1087,9 @@ const TABS=[
   {k:'user',l:'User Steps',bdg:'bdg-teal'},
   {k:'tech',l:'Tech Steps',bdg:'bdg-purple'},
   {k:'work',l:'Work Note',bdg:'bdg-red'},
-  {k:'close',l:'Closing Note',bdg:'bdg-green'}
+  {k:'close',l:'Closing Note',bdg:'bdg-green'},
+  {k:'notes',l:'📝 Notes',bdg:'bdg-blue'},
+  {k:'timeline',l:'⏱ Timeline',bdg:'bdg-teal'}
 ];
 
 let STATE={
@@ -1475,7 +1511,8 @@ function addToQueue(){
   if(!STATE.result)return;
   const status=document.getElementById('queueStatus').value;
   const q=getQueue();
-  const card={id:uuid(),user:STATE.lastUser,issue:STATE.lastIssue,priority:getPriority(STATE.lastIssue).k,addedAt:Date.now(),result:STATE.result};
+  const now=Date.now();
+  const card={id:uuid(),user:STATE.lastUser,issue:STATE.lastIssue,priority:getPriority(STATE.lastIssue).k,addedAt:now,statusAt:now,statusHistory:[{status,ts:now}],result:STATE.result};
   q[status].unshift(card);
   saveQueue(q);
   renderQueue();
@@ -1499,16 +1536,48 @@ function resetForm(){
   document.getElementById('tUser').focus();
 }
 
-function moveCard(id,from,to){
+function moveCard(id,from,to,opts={}){
   const q=getQueue();
   const idx=q[from].findIndex(c=>c.id===id);
   if(idx===-1)return;
   const [card]=q[from].splice(idx,1);
   if(to==='delete'){saveQueue(q);renderQueue();updateQueueCount();return;}
+  const now=Date.now();
+  if(!card.statusHistory)card.statusHistory=[];
+  card.statusHistory.push({status:to,ts:now,note:opts.reason||''});
+  card.statusAt=now;
+  if(to==='hold'&&opts.reason){card.holdReason=opts.reason;}
+  else if(to!=='hold'){delete card.holdReason;}
   q[to].unshift(card);
   saveQueue(q);
   renderQueue();
   updateQueueCount();
+}
+
+// ── Hold functions ──────────────────────────────────────────────────
+let _holdTarget={id:null,from:null};
+
+function holdCard(id,fromStatus){
+  _holdTarget={id,from:fromStatus};
+  document.getElementById('holdCustomReason').value='';
+  document.querySelectorAll('.hold-preset').forEach(b=>b.classList.remove('sel'));
+  document.getElementById('holdModal').style.display='flex';
+}
+function closeHoldModal(){
+  document.getElementById('holdModal').style.display='none';
+  _holdTarget={id:null,from:null};
+}
+function selectHoldPreset(btn){
+  document.querySelectorAll('.hold-preset').forEach(b=>b.classList.remove('sel'));
+  btn.classList.add('sel');
+  document.getElementById('holdCustomReason').value=btn.dataset.val;
+}
+function submitHold(){
+  const reason=document.getElementById('holdCustomReason').value.trim()||'On Hold';
+  if(!_holdTarget.id)return;
+  moveCard(_holdTarget.id,_holdTarget.from,'hold',{reason});
+  closeHoldModal();
+  toast('Ticket on hold: '+reason,'info');
 }
 
 // ── Close Ticket functions ──────────────────────────────────────────
@@ -1641,15 +1710,33 @@ function renderQueue(){
       col.innerHTML='<div style="text-align:center;padding:20px 0;font-size:11px;color:rgba(255,255,255,.18);border:2px dashed rgba(255,255,255,.06);border-radius:10px;margin-top:4px">Drop tickets here</div>';
       return;
     }
+    // Per-column SLA thresholds (hours in current status)
+    const slaCfg={
+      new:{warn:0.5,crit:2},
+      active:{warn:4,crit:8},
+      hold:{warn:24,crit:72},
+      tbx:{warn:2,crit:99}
+    };
     q[status].forEach(card=>{
       const pri=getPriority(card.issue);
-      const age=timeAgo(card.addedAt);
-      const hoursOld=(Date.now()-card.addedAt)/(1000*60*60);
-      const slaColor=hoursOld>=24?'#fca5a5':hoursOld>=8?'#fcd34d':hoursOld>=4?'#fb923c':'#86efac';
-      const slaBg=hoursOld>=24?'rgba(239,68,68,.15)':hoursOld>=8?'rgba(245,158,11,.15)':hoursOld>=4?'rgba(251,146,60,.15)':'rgba(34,197,94,.1)';
-      const slaLabel=hoursOld>=24?'⚠ 24h+':hoursOld>=8?'8h+':hoursOld>=4?'4h+':'';
+      const stAt=card.statusAt||card.addedAt||Date.now();
+      const hoursIn=(Date.now()-stAt)/36e5; // hours in current status
+      const cfg=slaCfg[status]||{warn:4,crit:8};
+      const slaColor=hoursIn>=cfg.crit?'#fca5a5':hoursIn>=cfg.warn?'#fcd34d':'#86efac';
+      const slaBg=hoursIn>=cfg.crit?'rgba(239,68,68,.15)':hoursIn>=cfg.warn?'rgba(245,158,11,.15)':'rgba(34,197,94,.08)';
+      const slaLabel=hoursIn>=cfg.crit?`⚠ ${hoursIn>=72?Math.floor(hoursIn/24)+'d':Math.floor(hoursIn)+'h'}`:hoursIn>=cfg.warn?`${hoursIn>=1?Math.floor(hoursIn)+'h':Math.round(hoursIn*60)+'m'} here`:'';
+      // Status context line
+      let ctxLine='';
+      if(status==='active'){
+        ctxLine=`<div style="font-size:10px;color:rgba(34,197,94,.65);margin-bottom:7px;font-weight:600">● Working for ${hoursIn>=1?Math.floor(hoursIn)+'h '+Math.floor((hoursIn%1)*60)+'m':Math.round(hoursIn*60)+'m'}</div>`;
+      }else if(status==='hold'&&card.holdReason){
+        ctxLine=`<div style="font-size:10.5px;color:rgba(245,158,11,.75);margin-bottom:7px;font-weight:600;line-height:1.4">⏸ ${esc(card.holdReason)}</div>`;
+      }else if(status==='tbx'){
+        ctxLine=`<div style="font-size:10px;color:rgba(99,102,241,.7);margin-bottom:7px;font-weight:600">✓ Fix applied — ready to document</div>`;
+      }
+      const notesBadge=card.notes?.length?`<span style="font-size:10px;color:rgba(255,255,255,.3);margin-left:4px">📝 ${card.notes.length}</span>`:'';
       const div=document.createElement('div');
-      div.className='qcard';
+      div.className='qcard qcard-accent-'+status;
       div.draggable=true;
       div.ondragstart=e=>{
         e.dataTransfer.setData('cardId',card.id);
@@ -1663,12 +1750,14 @@ function renderQueue(){
             <div style="min-width:0">
               <span style="font-size:12px;font-weight:700;color:#e2e8f0">${esc(card.user)}</span>
               ${card.inc?`<span style="font-size:10px;color:#a5b4fc;margin-left:5px">${esc(card.inc)}</span>`:''}
+              ${notesBadge}
             </div>
             <span class="bdg ${pri.cls}" style="flex-shrink:0">${pri.l}</span>
           </div>
+          ${ctxLine}
           <div style="font-size:11px;color:rgba(255,255,255,.45);line-height:1.5;margin-bottom:9px">${esc(card.issue.length>55?card.issue.slice(0,55)+'…':card.issue)}</div>
           <div style="display:flex;align-items:center;gap:5px;margin-bottom:9px">
-            <span style="font-size:10px;color:rgba(255,255,255,.25)">${age}</span>
+            <span style="font-size:10px;color:rgba(255,255,255,.25)">${timeAgo(card.addedAt)}</span>
             ${slaLabel?`<span style="font-size:10px;font-weight:700;padding:2px 7px;border-radius:100px;background:${slaBg};color:${slaColor}">${slaLabel}</span>`:''}
             <span style="font-size:10px;color:rgba(255,255,255,.2);margin-left:auto">Tap to view →</span>
           </div>
@@ -1680,25 +1769,25 @@ function renderQueue(){
 }
 
 function getMoveButtons(id,status){
-  const prev={active:'new',hold:'active',tbx:'hold'};
-  const next={new:'active',active:'hold',hold:'tbx'};
-  const nextLabel={new:'Active',active:'Hold',hold:'TBX'};
-  const prevLabel={active:'← New',hold:'← Active',tbx:'← Hold'};
+  // Consistent base style for all action buttons
+  const b='font-size:11px;font-weight:700;padding:5px 9px;border-radius:7px;cursor:pointer;border:1px solid;transition:all .15s';
   let btns='';
-  if(status==='tbx'){
-    // TBX gets a prominent Close & Document button
-    btns+=`<button onclick="openCloseTicket('${id}')" style="flex:1;font-size:11px;font-weight:800;padding:6px 10px;border-radius:8px;background:linear-gradient(135deg,rgba(22,163,74,.25),rgba(21,128,61,.2));border:1px solid rgba(34,197,94,.35);color:#86efac;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px">✅ Close &amp; Document</button>`;
-    btns+=`<button onclick="moveCard('${id}','tbx','hold')" title="Move back" style="font-size:10px;font-weight:600;padding:6px 8px;border-radius:6px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);color:rgba(255,255,255,.4);cursor:pointer">← Hold</button>`;
-    btns+=`<button onclick="moveCard('${id}','tbx','delete')" title="Remove" style="font-size:10px;padding:6px 8px;border-radius:6px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);color:rgba(239,68,68,.6);cursor:pointer">✕</button>`;
-    return btns;
+  if(status==='new'){
+    btns+=`<button onclick="moveCard('${id}','new','active')" title="Start working on this ticket" style="${b};flex:1;background:rgba(34,197,94,.15);border-color:rgba(34,197,94,.4);color:#86efac">▶ Start</button>`;
+    btns+=`<button onclick="moveCard('${id}','new','delete')" title="Remove ticket" style="${b};background:rgba(239,68,68,.07);border-color:rgba(239,68,68,.2);color:rgba(239,68,68,.6)">✕</button>`;
+  }else if(status==='active'){
+    btns+=`<button onclick="moveCard('${id}','active','new')" title="Back to New" style="${b};background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.1);color:rgba(255,255,255,.38)">← New</button>`;
+    btns+=`<button onclick="holdCard('${id}','active')" title="Put on hold" style="${b};flex:1;background:rgba(245,158,11,.12);border-color:rgba(245,158,11,.28);color:#fcd34d">⏸ Hold</button>`;
+    btns+=`<button onclick="moveCard('${id}','active','tbx')" title="Fix applied — ready to close" style="${b};flex:1;background:rgba(99,102,241,.12);border-color:rgba(99,102,241,.3);color:#a5b4fc">✓ Done</button>`;
+  }else if(status==='hold'){
+    btns+=`<button onclick="moveCard('${id}','hold','active')" title="Resume work" style="${b};flex:1;background:rgba(34,197,94,.15);border-color:rgba(34,197,94,.4);color:#86efac">▶ Resume</button>`;
+    btns+=`<button onclick="moveCard('${id}','hold','tbx')" title="Fix applied — ready to close" style="${b};background:rgba(99,102,241,.12);border-color:rgba(99,102,241,.3);color:#a5b4fc">✓ Done</button>`;
+    btns+=`<button onclick="moveCard('${id}','hold','delete')" title="Remove ticket" style="${b};background:rgba(239,68,68,.07);border-color:rgba(239,68,68,.2);color:rgba(239,68,68,.6)">✕</button>`;
+  }else if(status==='tbx'){
+    btns+=`<button onclick="openCloseTicket('${id}')" title="Document fix and close" style="${b};flex:1;background:linear-gradient(135deg,rgba(22,163,74,.22),rgba(21,128,61,.18));border-color:rgba(34,197,94,.4);color:#86efac;display:flex;align-items:center;justify-content:center;gap:4px">✅ Close</button>`;
+    btns+=`<button onclick="moveCard('${id}','tbx','active')" title="Back to Active" style="${b};background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.1);color:rgba(255,255,255,.38)">← Active</button>`;
+    btns+=`<button onclick="moveCard('${id}','tbx','delete')" title="Remove ticket" style="${b};background:rgba(239,68,68,.07);border-color:rgba(239,68,68,.2);color:rgba(239,68,68,.6)">✕</button>`;
   }
-  if(prev[status]){
-    btns+=`<button onclick="moveCard('${id}','${status}','${prev[status]}')" title="Move back" style="font-size:10px;font-weight:600;padding:3px 7px;border-radius:6px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);color:rgba(255,255,255,.4);cursor:pointer">${prevLabel[status]}</button>`;
-  }
-  if(next[status]){
-    btns+=`<button onclick="moveCard('${id}','${status}','${next[status]}')" style="font-size:10px;font-weight:600;padding:3px 7px;border-radius:6px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.5);cursor:pointer">${nextLabel[status]} →</button>`;
-  }
-  btns+=`<button onclick="moveCard('${id}','${status}','delete')" title="Remove" style="font-size:10px;padding:3px 7px;border-radius:6px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);color:rgba(239,68,68,.6);cursor:pointer">✕</button>`;
   return btns;
 }
 
@@ -1730,9 +1819,22 @@ function saveTicketToHistory(user,issue,model,result,inc='',training=false){
   saveTickets(tickets);
 }
 
+let _histFilter='all';
+function setHistFilter(f){
+  _histFilter=f;
+  ['all','closed','kb','training'].forEach(id=>{
+    const btn=document.getElementById('hf'+id.charAt(0).toUpperCase()+id.slice(1));
+    if(btn){btn.classList.toggle('on',id===f);}
+  });
+  renderHistory();
+}
+
 function renderHistory(){
   const q=(document.getElementById('histSearch')?.value||'').toLowerCase();
-  const tickets=getTickets().filter(t=>!q||t.user.toLowerCase().includes(q)||t.issue.toLowerCase().includes(q));
+  let tickets=getTickets().filter(t=>!q||t.user.toLowerCase().includes(q)||t.issue.toLowerCase().includes(q));
+  if(_histFilter==='closed')tickets=tickets.filter(t=>t.status==='closed');
+  else if(_histFilter==='kb')tickets=tickets.filter(t=>t.resolution?.savedToKb);
+  else if(_histFilter==='training')tickets=tickets.filter(t=>t.training);
   const el=document.getElementById('histList');
   if(!el)return;
   if(!tickets.length){el.innerHTML='<div style="text-align:center;padding:40px 0;font-size:13px;color:rgba(255,255,255,.25)">No tickets found</div>';return;}
@@ -1753,14 +1855,15 @@ function renderHistory(){
             ${t.inc?`<span class="bdg bdg-purple">${esc(t.inc)}</span>`:''}
             ${t.training?'<span class="bdg bdg-amber">🎓 Training</span>':''}
             ${t.resolution?.time?`<span class="bdg bdg-gray">⏱ ${esc(t.resolution.time)}</span>`:''}
+            ${t.resolution?.savedToKb?'<span class="bdg bdg-teal">📚 KB</span>':''}
           </div>
           <div style="font-size:12px;color:rgba(255,255,255,.4);margin-bottom:${isClosed&&t.resolution?.fix?'6px':'0'}">${esc(t.issue.length>80?t.issue.slice(0,80)+'…':t.issue)}</div>
           ${isClosed&&t.resolution?.fix?`<div style="font-size:11.5px;color:rgba(34,197,94,.6);background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.15);border-radius:7px;padding:6px 10px;line-height:1.5"><strong style="color:rgba(34,197,94,.8)">Fix:</strong> ${esc(t.resolution.fix.length>120?t.resolution.fix.slice(0,120)+'…':t.resolution.fix)}</div>`:''}
         </div>
         <div style="text-align:right;flex-shrink:0">
           <div style="font-size:10px;color:rgba(255,255,255,.25)">${timeAgo(isClosed&&t.closedAt?t.closedAt:t.createdAt)}</div>
-          ${isClosed?'<div style="font-size:10px;color:rgba(34,197,94,.5);margin-top:2px">Closed</div>':''}
           <div style="display:flex;flex-direction:column;gap:4px;margin-top:6px;align-items:flex-end">
+            ${isClosed?`<button onclick="reopenTicket('${t.id}')" style="font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.22);color:#fcd34d;cursor:pointer">↩ Reopen</button>`:''}
             <button onclick="reloadTicket('${t.id}')" style="font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px;background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.22);color:#93c5fd;cursor:pointer">Load →</button>
             <button onclick="event.stopPropagation();deleteTicket('${t.id}')" style="font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);color:rgba(239,68,68,.6);cursor:pointer">Delete</button>
           </div>
@@ -1768,6 +1871,29 @@ function renderHistory(){
       </div>`;
     el.appendChild(div);
   });
+}
+
+function reopenTicket(id){
+  const tickets=getTickets();
+  const idx=tickets.findIndex(t=>t.id===id);
+  if(idx===-1)return;
+  const t=tickets.splice(idx,1)[0];
+  saveTickets(tickets);
+  const now=Date.now();
+  const card={
+    id:t.id,user:t.user,issue:t.issue,inc:t.inc||'',
+    priority:t.priority||getPriority(t.issue).k,
+    addedAt:t.addedAt||now,statusAt:now,
+    result:t.result||null,
+    statusHistory:[...(t.statusHistory||[]),{status:'new',ts:now,note:'Reopened from history'}],
+    notes:t.notes||[]
+  };
+  const q=getQueue();
+  q.new.unshift(card);
+  saveQueue(q);
+  renderHistory();
+  updateQueueCount();
+  toast('Ticket reopened → New queue','success');
 }
 
 function reloadTicket(id){
@@ -2141,7 +2267,7 @@ function importSelectedTickets(){
       id:uuid(),user:t.user||'Unknown',
       issue:t.issue||'No description',
       inc:t.inc,priority:getPriority(t.issue).k,
-      addedAt:Date.now(),result:null,fromSN:true
+      addedAt:Date.now(),statusAt:Date.now(),statusHistory:[{status:'new',ts:Date.now()}],result:null,fromSN:true
     };
     q.new.unshift(card);
   });
@@ -2532,31 +2658,52 @@ let CD={card:null,status:null,tab:'teams'};
 function openCardDetail(id,status){
   const q=getQueue();
   const card=q[status]?.find(c=>c.id===id);
-  if(!card||!card.result)return;
-  CD={card,status,tab:'teams'};
+  if(!card)return;
+  // Default to 'notes' if no AI result yet, otherwise 'teams'
+  const defaultTab=card.result?'teams':'notes';
+  CD={card,status,tab:defaultTab};
   const pri=getPriority(card.issue);
-  const hoursOld=(Date.now()-card.addedAt)/36e5;
-  const slaColor=hoursOld>=24?'#fca5a5':hoursOld>=8?'#fcd34d':hoursOld>=4?'#fb923c':'#86efac';
-  const slaBg=hoursOld>=24?'rgba(239,68,68,.15)':hoursOld>=8?'rgba(245,158,11,.15)':hoursOld>=4?'rgba(251,146,60,.15)':'rgba(34,197,94,.1)';
-  const slaLabel=hoursOld>=24?'⚠ 24h+':hoursOld>=8?'8h+':hoursOld>=4?'4h+':hoursOld>=1?Math.floor(hoursOld)+'h':'< 1h';
-  document.getElementById('cdUser').textContent=card.user;
+  const stAt=card.statusAt||card.addedAt||Date.now();
+  const hoursIn=(Date.now()-stAt)/36e5;
+  const colSla={new:{warn:.5,crit:2},active:{warn:4,crit:8},hold:{warn:24,crit:72},tbx:{warn:2,crit:99}};
+  const cfg=colSla[status]||{warn:4,crit:8};
+  const slaColor=hoursIn>=cfg.crit?'#fca5a5':hoursIn>=cfg.warn?'#fcd34d':'#86efac';
+  const slaBg=hoursIn>=cfg.crit?'rgba(239,68,68,.15)':hoursIn>=cfg.warn?'rgba(245,158,11,.15)':'rgba(34,197,94,.08)';
+  const slaLabel=status==='active'?`Working ${hoursIn>=1?Math.floor(hoursIn)+'h':Math.round(hoursIn*60)+'m'}`:
+                 status==='hold'?`On hold ${hoursIn>=24?Math.floor(hoursIn/24)+'d':Math.floor(hoursIn)+'h'}`:
+                 status==='tbx'?'Ready to close':
+                 `${hoursIn>=1?Math.floor(hoursIn)+'h':Math.round(hoursIn*60)+'m'} new`;
+  document.getElementById('cdUser').textContent=card.user+(card.inc?' · '+card.inc:'');
   const priEl=document.getElementById('cdPri');priEl.className='bdg '+pri.cls;priEl.textContent=pri.l;
-  const slaEl=document.getElementById('cdSla');slaEl.textContent=slaLabel;slaEl.style.background=slaBg;slaEl.style.color=slaColor;
-  document.getElementById('cdAge').textContent=timeAgo(card.addedAt);
-  document.getElementById('cdIssue').textContent=card.issue;
-  // Build tabs
+  const slaEl=document.getElementById('cdSla');slaEl.textContent=slaLabel;slaEl.style.background=slaBg;slaEl.style.color=slaColor;slaEl.style.border='1px solid '+slaColor+'44';
+  document.getElementById('cdAge').textContent='Added '+timeAgo(card.addedAt);
+  // Show hold reason below issue if applicable
+  document.getElementById('cdIssue').innerHTML=esc(card.issue)+(card.holdReason?`<div style="margin-top:6px;padding:6px 10px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:7px;font-size:11px;color:#fcd34d;font-weight:600">⏸ ${esc(card.holdReason)}</div>`:'');
+  // Build tabs — show all AI tabs only if result exists, plus always show Notes + Timeline
   const tabsEl=document.getElementById('cdTabs');
-  tabsEl.innerHTML=TABS.map(t=>`<button id="cdtab-${t.k}" onclick="cdSetTab('${t.k}')" style="padding:7px 13px;border-radius:8px 8px 0 0;font-size:11.5px;font-weight:700;border:none;cursor:pointer;white-space:nowrap;transition:all .15s;${t.k==='teams'?'background:rgba(255,255,255,.1);color:#e2e8f0':'background:transparent;color:rgba(255,255,255,.35)'}">${t.l}</button>`).join('');
-  cdSetTab('teams');
-  // Build move/delete row
-  const prev={active:'new',hold:'active',tbx:'hold'};
-  const next={new:'active',active:'hold',hold:'tbx'};
-  const nextLabel={new:'→ Active',active:'→ On Hold',hold:'→ TBX'};
-  const prevLabel={active:'← New',hold:'← Active',tbx:'← Hold'};
+  const visibleTabs=card.result?TABS:TABS.filter(t=>t.k==='notes'||t.k==='timeline');
+  tabsEl.innerHTML=visibleTabs.map(t=>`<button id="cdtab-${t.k}" onclick="cdSetTab('${t.k}')" style="padding:7px 13px;border-radius:8px 8px 0 0;font-size:11.5px;font-weight:700;border:none;cursor:pointer;white-space:nowrap;transition:all .15s;${t.k===defaultTab?'background:rgba(255,255,255,.1);color:#e2e8f0':'background:transparent;color:rgba(255,255,255,.35)'}">${t.l}</button>`).join('');
+  cdSetTab(defaultTab);
+  // Build status-aware move row
+  const bs='padding:8px 13px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid';
   let row='';
-  if(prev[status])row+=`<button onclick="moveCard('${id}','${status}','${prev[status]}');closeCardDetail();renderQueue()" style="padding:8px 13px;border-radius:8px;font-size:12px;font-weight:700;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);color:rgba(255,255,255,.5);cursor:pointer">${prevLabel[status]}</button>`;
-  if(next[status])row+=`<button onclick="moveCard('${id}','${status}','${next[status]}');closeCardDetail();renderQueue()" style="padding:8px 13px;border-radius:8px;font-size:12px;font-weight:700;background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.25);color:#93c5fd;cursor:pointer">${nextLabel[status]}</button>`;
-  row+=`<button onclick="moveCard('${id}','${status}','delete');closeCardDetail()" style="padding:8px 13px;border-radius:8px;font-size:12px;font-weight:700;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);color:#fca5a5;cursor:pointer">Delete</button>`;
+  if(status==='new'){
+    row+=`<button onclick="moveCard('${id}','new','active');closeCardDetail()" style="${bs};background:rgba(34,197,94,.12);border-color:rgba(34,197,94,.3);color:#86efac">▶ Start Working</button>`;
+    row+=`<button onclick="moveCard('${id}','new','delete');closeCardDetail()" style="${bs};background:rgba(239,68,68,.08);border-color:rgba(239,68,68,.2);color:#fca5a5">🗑 Delete</button>`;
+  }else if(status==='active'){
+    row+=`<button onclick="moveCard('${id}','active','new');closeCardDetail()" style="${bs};background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.1);color:rgba(255,255,255,.5)">← New</button>`;
+    row+=`<button onclick="closeCardDetail();holdCard('${id}','active')" style="${bs};background:rgba(245,158,11,.12);border-color:rgba(245,158,11,.28);color:#fcd34d">⏸ Hold</button>`;
+    row+=`<button onclick="moveCard('${id}','active','tbx');closeCardDetail()" style="${bs};background:rgba(99,102,241,.12);border-color:rgba(99,102,241,.3);color:#a5b4fc">✓ Mark Done</button>`;
+    row+=`<button onclick="moveCard('${id}','active','delete');closeCardDetail()" style="${bs};background:rgba(239,68,68,.08);border-color:rgba(239,68,68,.2);color:#fca5a5">🗑 Delete</button>`;
+  }else if(status==='hold'){
+    row+=`<button onclick="moveCard('${id}','hold','active');closeCardDetail()" style="${bs};background:rgba(34,197,94,.12);border-color:rgba(34,197,94,.3);color:#86efac">▶ Resume</button>`;
+    row+=`<button onclick="moveCard('${id}','hold','tbx');closeCardDetail()" style="${bs};background:rgba(99,102,241,.12);border-color:rgba(99,102,241,.3);color:#a5b4fc">✓ Mark Done</button>`;
+    row+=`<button onclick="moveCard('${id}','hold','delete');closeCardDetail()" style="${bs};background:rgba(239,68,68,.08);border-color:rgba(239,68,68,.2);color:#fca5a5">🗑 Delete</button>`;
+  }else if(status==='tbx'){
+    row+=`<button onclick="closeCardDetail();openCloseTicket('${id}')" style="${bs};background:linear-gradient(135deg,rgba(22,163,74,.2),rgba(21,128,61,.15));border-color:rgba(34,197,94,.4);color:#86efac">✅ Close & Document</button>`;
+    row+=`<button onclick="moveCard('${id}','tbx','active');closeCardDetail()" style="${bs};background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.1);color:rgba(255,255,255,.5)">← Back to Active</button>`;
+    row+=`<button onclick="moveCard('${id}','tbx','delete');closeCardDetail()" style="${bs};background:rgba(239,68,68,.08);border-color:rgba(239,68,68,.2);color:#fca5a5">🗑 Delete</button>`;
+  }
   document.getElementById('cdMoveRow').innerHTML=row;
   document.getElementById('cardDetailModal').style.display='flex';
 }
@@ -2567,7 +2714,52 @@ function cdSetTab(k){
     const btn=document.getElementById('cdtab-'+t.k);
     if(btn){btn.style.background=t.k===k?'rgba(255,255,255,.1)':'transparent';btn.style.color=t.k===k?'#e2e8f0':'rgba(255,255,255,.35)';}
   });
-  document.getElementById('cdBody').innerHTML=formatOutput(CD.card?.result?.[k]||'');
+  const body=document.getElementById('cdBody');
+  if(k==='notes'){
+    const notes=CD.card.notes||[];
+    let html=`<div style="margin-bottom:16px"><textarea id="cdNoteInput" class="inp" rows="3" placeholder="Add a work note (what you tried, what happened, next steps…)" style="resize:none;margin-bottom:8px"></textarea><button onclick="addCardNote()" style="padding:7px 16px;border-radius:8px;background:rgba(59,130,246,.15);border:1px solid rgba(59,130,246,.3);color:#93c5fd;font-size:12px;font-weight:700;cursor:pointer">+ Add Note</button></div>`;
+    if(!notes.length){
+      html+=`<div style="text-align:center;padding:24px 0;font-size:12px;color:rgba(255,255,255,.25)">No work notes yet.<br/>Add notes to track what you tried.</div>`;
+    }else{
+      notes.forEach(n=>{
+        html+=`<div style="padding:10px 13px;background:rgba(255,255,255,.04);border-radius:9px;border:1px solid rgba(255,255,255,.07);margin-bottom:8px"><div style="font-size:10px;color:rgba(255,255,255,.3);margin-bottom:5px">${new Date(n.ts).toLocaleString()}</div><div style="font-size:12.5px;color:rgba(255,255,255,.7);line-height:1.6;white-space:pre-wrap">${esc(n.text)}</div></div>`;
+      });
+    }
+    body.innerHTML=html;
+    return;
+  }
+  if(k==='timeline'){
+    const hist=CD.card.statusHistory||[];
+    const statusLabel={new:'🆕 New',active:'▶ Active',hold:'⏸ On Hold',tbx:'✓ TBX / Ready',closed:'✅ Closed'};
+    const statusColor={new:'#93c5fd',active:'#86efac',hold:'#fcd34d',tbx:'#a5b4fc',closed:'#6ee7b7'};
+    if(!hist.length){
+      body.innerHTML=`<div style="text-align:center;padding:24px 0;font-size:12px;color:rgba(255,255,255,.25)">No history yet.</div>`;
+      return;
+    }
+    let html='<div style="display:flex;flex-direction:column;gap:0">';
+    hist.forEach((h,i)=>{
+      const col=statusColor[h.status]||'#e2e8f0';
+      html+=`<div style="display:flex;gap:12px;align-items:flex-start">
+        <div style="display:flex;flex-direction:column;align-items:center;flex-shrink:0">
+          <div style="width:10px;height:10px;border-radius:50%;background:${col};margin-top:4px"></div>
+          ${i<hist.length-1?`<div style="width:2px;flex:1;min-height:24px;background:rgba(255,255,255,.07);margin:3px 0"></div>`:''}
+        </div>
+        <div style="padding-bottom:${i<hist.length-1?'12':'0'}px">
+          <div style="font-size:12px;font-weight:700;color:${col}">${statusLabel[h.status]||h.status}</div>
+          ${h.note?`<div style="font-size:11px;color:rgba(255,255,255,.45);margin-top:2px">${esc(h.note)}</div>`:''}
+          <div style="font-size:10px;color:rgba(255,255,255,.25);margin-top:2px">${new Date(h.ts).toLocaleString()}</div>
+        </div>
+      </div>`;
+    });
+    html+='</div>';
+    body.innerHTML=html;
+    return;
+  }
+  if(!CD.card?.result){
+    body.innerHTML=`<div style="text-align:center;padding:30px 0;color:rgba(255,255,255,.3);font-size:13px"><div style="font-size:32px;margin-bottom:10px">🔍</div><div style="font-weight:700;margin-bottom:6px">No AI analysis yet</div><div style="font-size:12px">Load this ticket in the New Ticket view<br/>and click <strong style="color:#93c5fd">Generate Intelligence</strong> to analyze.</div></div>`;
+    return;
+  }
+  body.innerHTML=formatOutput(CD.card.result[k]||'');
 }
 
 function cdCopyTab(){
@@ -2583,6 +2775,22 @@ function cdCopyAll(){
 }
 
 function closeCardDetail(){document.getElementById('cardDetailModal').style.display='none';}
+
+function addCardNote(){
+  const text=(document.getElementById('cdNoteInput')?.value||'').trim();
+  if(!text){toast('Note cannot be empty','error');return;}
+  const q=getQueue();
+  const col=q[CD.status];
+  if(!col)return;
+  const card=col.find(c=>c.id===CD.card.id);
+  if(!card)return;
+  if(!card.notes)card.notes=[];
+  card.notes.unshift({ts:Date.now(),text});
+  CD.card=card;
+  saveQueue(q);
+  cdSetTab('notes');
+  toast('Note saved','success');
+}
 
 // ══════════════════════════════════════════
 //  KNOWLEDGE BASE
