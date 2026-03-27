@@ -868,6 +868,68 @@ textarea.inp{resize:vertical;min-height:88px;line-height:1.6}
   </div>
 </div>
 
+<!-- CLOSE TICKET MODAL -->
+<div id="closeTicketModal" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeCloseModal()">
+  <div class="modal-box" style="max-width:580px;max-height:92dvh;overflow-y:auto">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <div>
+        <div style="font-size:10px;font-weight:700;color:rgba(34,197,94,.8);letter-spacing:.08em;text-transform:uppercase;margin-bottom:3px">✅ Close &amp; Document</div>
+        <h2 style="font-size:17px;font-weight:800">Close Ticket</h2>
+      </div>
+      <button onclick="closeCloseModal()" style="background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:5px 10px;color:rgba(255,255,255,.5);cursor:pointer;font-size:12px">✕</button>
+    </div>
+
+    <!-- Ticket summary strip -->
+    <div id="ctSummary" style="padding:10px 13px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:10px;margin-bottom:16px;font-size:12px;color:rgba(255,255,255,.5)"></div>
+
+    <!-- Pre-filled AI insight -->
+    <div id="ctAiInsight" style="display:none;padding:10px 13px;background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.2);border-radius:10px;margin-bottom:16px">
+      <div style="font-size:10px;font-weight:700;color:rgba(34,197,94,.7);letter-spacing:.07em;text-transform:uppercase;margin-bottom:6px">AI Root Cause (pre-filled from analysis)</div>
+      <div id="ctAiRoot" style="font-size:12px;color:rgba(255,255,255,.55);line-height:1.6"></div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:13px">
+      <div>
+        <label style="font-size:11px;font-weight:700;color:rgba(255,255,255,.35);letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:6px">What actually fixed it? <span style="color:#ef4444">*</span></label>
+        <textarea class="inp" id="ctFix" rows="4" placeholder="e.g. Reinstalled Lenovo Vantage, ran Windows Update, rebooted. Profile corruption — rebuilt via robocopy from backup..." style="resize:vertical;min-height:90px"></textarea>
+      </div>
+      <div style="display:flex;gap:10px">
+        <div style="flex:1">
+          <label style="font-size:11px;font-weight:700;color:rgba(255,255,255,.35);letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:6px">Time to Resolve</label>
+          <select class="inp" id="ctTime">
+            <option value="&lt;15 min">&lt; 15 min</option>
+            <option value="15-30 min" selected>15-30 min</option>
+            <option value="30-60 min">30-60 min</option>
+            <option value="1-2 hours">1-2 hours</option>
+            <option value="2-4 hours">2-4 hours</option>
+            <option value="4+ hours">4+ hours</option>
+          </select>
+        </div>
+        <div style="flex:1">
+          <label style="font-size:11px;font-weight:700;color:rgba(255,255,255,.35);letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:6px">Category</label>
+          <input class="inp" id="ctCat" placeholder="e.g. Drivers, Network, Office…"/>
+        </div>
+      </div>
+      <div>
+        <label style="font-size:11px;font-weight:700;color:rgba(255,255,255,.35);letter-spacing:.06em;text-transform:uppercase;display:block;margin-bottom:6px">Tags <span style="color:rgba(255,255,255,.25);font-weight:400">(comma separated)</span></label>
+        <input class="inp" id="ctTags" placeholder="e.g. Lenovo, VPN, Outlook, password reset"/>
+      </div>
+
+      <!-- Save to KB toggle -->
+      <label style="display:flex;align-items:flex-start;gap:10px;padding:12px;background:rgba(59,130,246,.07);border:1px solid rgba(59,130,246,.18);border-radius:10px;cursor:pointer">
+        <input type="checkbox" id="ctSaveKb" checked style="margin-top:2px;width:15px;height:15px;accent-color:#3b82f6;flex-shrink:0"/>
+        <div>
+          <div style="font-size:12.5px;font-weight:700;color:#93c5fd;margin-bottom:2px">📚 Save to Knowledge Base</div>
+          <div style="font-size:11px;color:rgba(255,255,255,.35);line-height:1.5">Documents this fix so AI can learn and suggest it next time a similar ticket comes in</div>
+        </div>
+      </label>
+
+      <button onclick="submitCloseTicket()" style="width:100%;padding:13px;border-radius:10px;font-size:14px;font-weight:800;color:#fff;background:linear-gradient(135deg,#16a34a,#15803d);border:none;cursor:pointer;box-shadow:0 0 20px rgba(22,163,74,.3)">✅ Close Ticket &amp; Document Fix</button>
+      <button onclick="quickCloseTicket()" style="width:100%;padding:10px;border-radius:10px;font-size:12px;font-weight:600;color:rgba(255,255,255,.35);background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);cursor:pointer">Close without documenting</button>
+    </div>
+  </div>
+</div>
+
 <!-- CARD DETAIL MODAL -->
 <div id="cardDetailModal" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeCardDetail()">
   <div class="modal-box" style="max-width:680px;width:100%;max-height:92dvh;display:flex;flex-direction:column;padding:0;overflow:hidden">
@@ -1449,6 +1511,114 @@ function moveCard(id,from,to){
   updateQueueCount();
 }
 
+// ── Close Ticket functions ──────────────────────────────────────────
+let _ctCardId=null;
+
+function closeCloseModal(){
+  document.getElementById('closeTicketModal').style.display='none';
+  _ctCardId=null;
+}
+
+function openCloseTicket(id){
+  const q=getQueue();
+  const card=q.tbx?.find(c=>c.id===id);
+  if(!card){toast('Ticket not found','error');return;}
+  _ctCardId=id;
+  // Summary strip
+  document.getElementById('ctSummary').innerHTML=
+    `<strong style="color:rgba(255,255,255,.7)">${esc(card.user)}</strong>`+
+    (card.inc?` · <span style="color:#a5b4fc">${esc(card.inc)}</span>`:'')+
+    `<br/><span style="font-size:11px">${esc(card.issue)}</span>`;
+  // Pre-fill AI root cause if present
+  const aiRoot=card.result?.root||card.result?.close||'';
+  if(aiRoot){
+    document.getElementById('ctAiRoot').textContent=aiRoot;
+    document.getElementById('ctAiInsight').style.display='block';
+    // Pre-populate fix field with AI suggestion as starter
+    const fixEl=document.getElementById('ctFix');
+    if(!fixEl.value)fixEl.value=aiRoot;
+  }else{
+    document.getElementById('ctAiInsight').style.display='none';
+    document.getElementById('ctFix').value='';
+  }
+  // Reset other fields
+  document.getElementById('ctTime').value='15-30 min';
+  document.getElementById('ctCat').value=card.category||'';
+  document.getElementById('ctTags').value='';
+  document.getElementById('ctSaveKb').checked=true;
+  document.getElementById('closeTicketModal').style.display='flex';
+}
+
+function submitCloseTicket(){
+  if(!_ctCardId)return;
+  const fix=document.getElementById('ctFix').value.trim();
+  if(!fix){toast('Please describe what fixed the issue','error');document.getElementById('ctFix').focus();return;}
+  const time=document.getElementById('ctTime').value;
+  const cat=document.getElementById('ctCat').value.trim();
+  const tagsRaw=document.getElementById('ctTags').value.trim();
+  const tags=tagsRaw?tagsRaw.split(',').map(s=>s.trim()).filter(Boolean):[];
+  const saveKb=document.getElementById('ctSaveKb').checked;
+
+  // Remove from queue
+  const q=getQueue();
+  const idx=q.tbx.findIndex(c=>c.id===_ctCardId);
+  if(idx===-1){toast('Ticket not found in queue','error');return;}
+  const [card]=q.tbx.splice(idx,1);
+  saveQueue(q);
+
+  // Build closed ticket for history
+  let kbId=null;
+  if(saveKb&&fix){
+    const kbArr=getKb();
+    const kbEntry={
+      id:'kb_'+Date.now(),
+      title:(cat||'Fix')+': '+(card.issue.length>60?card.issue.slice(0,60)+'…':card.issue),
+      content:fix,
+      tags:[...tags,...(cat?[cat]:[]),'closed-ticket'],
+      source:'Close & Document',
+      createdAt:Date.now()
+    };
+    kbArr.unshift(kbEntry);
+    saveKb(kbArr);
+    kbId=kbEntry.id;
+  }
+
+  const closedTicket={
+    ...card,
+    status:'closed',
+    closedAt:Date.now(),
+    resolution:{fix,time,tags,category:cat,savedToKb:saveKb,kbId}
+  };
+  const tickets=getTickets();
+  tickets.unshift(closedTicket);
+  saveTickets(tickets);
+
+  closeCloseModal();
+  renderQueue();
+  updateQueueCount();
+  // Navigate to history
+  setView('history');
+  toast(saveKb?'Ticket closed & fix saved to KB ✅':'Ticket closed ✅','success');
+}
+
+function quickCloseTicket(){
+  if(!_ctCardId)return;
+  const q=getQueue();
+  const idx=q.tbx.findIndex(c=>c.id===_ctCardId);
+  if(idx===-1){closeCloseModal();return;}
+  const [card]=q.tbx.splice(idx,1);
+  saveQueue(q);
+  const closedTicket={...card,status:'closed',closedAt:Date.now()};
+  const tickets=getTickets();
+  tickets.unshift(closedTicket);
+  saveTickets(tickets);
+  closeCloseModal();
+  renderQueue();
+  updateQueueCount();
+  setView('history');
+  toast('Ticket closed','info');
+}
+
 function renderQueue(){
   const q=getQueue();
   const cols={new:{el:'col-new',cnt:'cnt-new'},active:{el:'col-active',cnt:'cnt-active'},hold:{el:'col-hold',cnt:'cnt-hold'},tbx:{el:'col-tbx',cnt:'cnt-tbx'}};
@@ -1515,6 +1685,13 @@ function getMoveButtons(id,status){
   const nextLabel={new:'Active',active:'Hold',hold:'TBX'};
   const prevLabel={active:'← New',hold:'← Active',tbx:'← Hold'};
   let btns='';
+  if(status==='tbx'){
+    // TBX gets a prominent Close & Document button
+    btns+=`<button onclick="openCloseTicket('${id}')" style="flex:1;font-size:11px;font-weight:800;padding:6px 10px;border-radius:8px;background:linear-gradient(135deg,rgba(22,163,74,.25),rgba(21,128,61,.2));border:1px solid rgba(34,197,94,.35);color:#86efac;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px">✅ Close &amp; Document</button>`;
+    btns+=`<button onclick="moveCard('${id}','tbx','hold')" title="Move back" style="font-size:10px;font-weight:600;padding:6px 8px;border-radius:6px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);color:rgba(255,255,255,.4);cursor:pointer">← Hold</button>`;
+    btns+=`<button onclick="moveCard('${id}','tbx','delete')" title="Remove" style="font-size:10px;padding:6px 8px;border-radius:6px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);color:rgba(239,68,68,.6);cursor:pointer">✕</button>`;
+    return btns;
+  }
   if(prev[status]){
     btns+=`<button onclick="moveCard('${id}','${status}','${prev[status]}')" title="Move back" style="font-size:10px;font-weight:600;padding:3px 7px;border-radius:6px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);color:rgba(255,255,255,.4);cursor:pointer">${prevLabel[status]}</button>`;
   }
@@ -1562,22 +1739,31 @@ function renderHistory(){
   el.innerHTML='';
   tickets.forEach(t=>{
     const pri=getPriority(t.issue);
+    const isClosed=t.status==='closed';
     const div=document.createElement('div');
     div.className='hcard';
+    if(isClosed)div.style.borderColor='rgba(34,197,94,.2)';
     div.innerHTML=`
-      <div style="display:flex;align-items:center;gap:10px">
-        <div style="flex:1">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+      <div style="display:flex;align-items:flex-start;gap:10px">
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap">
             <span style="font-size:13px;font-weight:700">${esc(t.user)}</span>
             <span class="bdg ${pri.cls}">${pri.l}</span>
-            ${t.inc?`<span class="bdg bdg-purple">${esc(t.inc)}</span>`:''}${t.training?'<span class="bdg bdg-amber">🎓 Training</span>':''}
+            ${isClosed?'<span class="bdg bdg-green">✅ Closed</span>':''}
+            ${t.inc?`<span class="bdg bdg-purple">${esc(t.inc)}</span>`:''}
+            ${t.training?'<span class="bdg bdg-amber">🎓 Training</span>':''}
+            ${t.resolution?.time?`<span class="bdg bdg-gray">⏱ ${esc(t.resolution.time)}</span>`:''}
           </div>
-          <div style="font-size:12px;color:rgba(255,255,255,.4)">${esc(t.issue.length>80?t.issue.slice(0,80)+'…':t.issue)}</div>
+          <div style="font-size:12px;color:rgba(255,255,255,.4);margin-bottom:${isClosed&&t.resolution?.fix?'6px':'0'}">${esc(t.issue.length>80?t.issue.slice(0,80)+'…':t.issue)}</div>
+          ${isClosed&&t.resolution?.fix?`<div style="font-size:11.5px;color:rgba(34,197,94,.6);background:rgba(34,197,94,.06);border:1px solid rgba(34,197,94,.15);border-radius:7px;padding:6px 10px;line-height:1.5"><strong style="color:rgba(34,197,94,.8)">Fix:</strong> ${esc(t.resolution.fix.length>120?t.resolution.fix.slice(0,120)+'…':t.resolution.fix)}</div>`:''}
         </div>
         <div style="text-align:right;flex-shrink:0">
-          <div style="font-size:10px;color:rgba(255,255,255,.25)">${timeAgo(t.createdAt)}</div>
-          <button onclick="reloadTicket('${t.id}')" style="margin-top:6px;font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px;background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.22);color:#93c5fd;cursor:pointer">Load →</button>
-          <button onclick="event.stopPropagation();deleteTicket('${t.id}')" style="margin-top:6px;font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);color:rgba(239,68,68,.6);cursor:pointer">Delete</button>
+          <div style="font-size:10px;color:rgba(255,255,255,.25)">${timeAgo(isClosed&&t.closedAt?t.closedAt:t.createdAt)}</div>
+          ${isClosed?'<div style="font-size:10px;color:rgba(34,197,94,.5);margin-top:2px">Closed</div>':''}
+          <div style="display:flex;flex-direction:column;gap:4px;margin-top:6px;align-items:flex-end">
+            <button onclick="reloadTicket('${t.id}')" style="font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px;background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.22);color:#93c5fd;cursor:pointer">Load →</button>
+            <button onclick="event.stopPropagation();deleteTicket('${t.id}')" style="font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.2);color:rgba(239,68,68,.6);cursor:pointer">Delete</button>
+          </div>
         </div>
       </div>`;
     el.appendChild(div);
