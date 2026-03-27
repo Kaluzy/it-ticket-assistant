@@ -1226,6 +1226,17 @@ function boot(){
   initKbSuggestions();
 }
 
+// Re-render whichever view is currently visible (called after cloud sync pulls new data)
+function refreshAllViews(){
+  updateQueueCount();
+  if(typeof renderDashboard==='function')renderDashboard();
+  if(STATE.view==='queue'&&typeof renderQueue==='function')renderQueue();
+  if(STATE.view==='history'&&typeof renderHistory==='function')renderHistory();
+  if(STATE.view==='scripts'&&typeof renderScripts==='function')renderScripts();
+  if(STATE.view==='kb'&&typeof renderKb==='function')renderKb();
+  if(STATE.view==='reports'&&typeof renderReports==='function')renderReports();
+}
+
 // ══════════════════════════════════════════
 //  VIEWS
 // ══════════════════════════════════════════
@@ -2984,6 +2995,9 @@ async function initAuth(){
       if(hasKey&&document.getElementById('mainApp').style.display!=='flex'){
         document.getElementById('setupModal').style.display='none';
         boot();
+      }else if(_booted){
+        // App was already running — cloud data just arrived, refresh UI
+        refreshAllViews();
       }
     }else{
       const btn=document.getElementById('signInHeaderBtn');
@@ -3000,7 +3014,7 @@ async function initAuth(){
           document.getElementById('setupModal').style.display='none';
           boot();
         }else if(app.style.display==='flex'){
-          renderDashboard();
+          refreshAllViews();
         }
       }else if(event==='SIGNED_OUT'){
         currentUser=null;
@@ -3162,6 +3176,8 @@ async function syncFromSupabase(){
       if(data.settings?.g_key)setGoogleKey(data.settings.g_key);
       if(data.settings?.provider)setProvider(data.settings.provider);
       setSyncStatus('synced');
+      // If app is already running, refresh all views so new data appears immediately
+      if(_booted)refreshAllViews();
     }else{
       await pushToSupabase(); // first login — push everything up
     }
